@@ -1,20 +1,30 @@
-import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View } from 'react-native';
+import React, { useState } from 'react';
+import { NavigationContainer } from '@react-navigation/native';
+import { createDrawerNavigator } from '@react-navigation/drawer';
+import LoginScreen from './modules/LoginScreen';
+import HomeScreen from './modules/Homescreen';
+import Analytics from './modules/Analytics';
+
+const Drawer = createDrawerNavigator();
 
 export default function App() {
+  const [loggedIn, setLoggedIn] = useState(false);
+
+  const toggleLoggedIn = () => {
+    setLoggedIn(!loggedIn);
+  };
+
   return (
-    <View style={styles.container}>
-      <Text>Open up App.js to start working on your app!</Text>
-      <StatusBar style="auto" />
-    </View>
+    <NavigationContainer>
+      {loggedIn ? (
+        <Drawer.Navigator initialRouteName="Home">
+          <Drawer.Screen name="Home" component={HomeScreen} />
+          <Drawer.Screen name="Analytics" component={Analytics} />
+          {/* Add more screens as needed */}
+        </Drawer.Navigator>
+      ) : (
+        <LoginScreen onLogin={toggleLoggedIn} />
+      )}
+    </NavigationContainer>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-});
