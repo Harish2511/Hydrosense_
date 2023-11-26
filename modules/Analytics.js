@@ -1,25 +1,32 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StatusBar, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StatusBar, StyleSheet, Dimensions } from 'react-native';
 import { fetchData } from '../AwsFunctions';
+import { VictoryChart, VictoryLine, VictoryAxis } from 'victory-native';
 
 const Analytics = () => {
   const [tableData, setTableData] = useState([]);
 
   useEffect(() => {
-    fetchDataFromDynamoDb();    
+    fetchDataFromDynamoDb();
   }, []); // Fetch data on component mount
 
   const fetchDataFromDynamoDb = async () => {
     try {
       const data = await fetchData('ultraAwsTable');
       console.log('Raw DynamoDB Response:', data); // Log the raw response
-      setTableData(data.slice(0, 3));
+
+      // Assuming 'Distance' is the y-axis data
+      setTableData(data);
     } catch (error) {
       console.error('Error fetching data:', error);
     }
   };
 
   console.log('Table Data:', tableData); // Log table data
+
+  const lastThreeRecords = tableData.slice(-3);
+  const labelData = tableData.slice(-10).map((item) => item.id || ''); // Assuming 'id' is the x-axis label
+  const distanceData = tableData.slice(-10).map((item) => item.Distance || 0);
 
   return (
     <View style={styles.container}>
@@ -30,7 +37,7 @@ const Analytics = () => {
       </TouchableOpacity>
 
       <Text>Table Data:</Text>
-      {tableData.map((item, index) => {
+      {lastThreeRecords.map((item, index) => {
         console.log('Item:', item); // Log the item
         return (
           <View key={index} style={styles.itemContainer}>
@@ -40,6 +47,12 @@ const Analytics = () => {
           </View>
         );
       })}
+
+      <VictoryChart width={Dimensions.get('window').width - 16} height={220} domainPadding={{ x: 20 }}>
+        <VictoryAxis tickValues={labelData} />
+        <VictoryAxis dependentAxis />
+        <VictoryLine data={distanceData.map((d, i) => ({ x: labelData[i], y: d }))} />
+      </VictoryChart>
 
       <StatusBar style="auto" />
     </View>
