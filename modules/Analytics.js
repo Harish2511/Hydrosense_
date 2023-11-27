@@ -2,13 +2,25 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StatusBar, StyleSheet, Dimensions } from 'react-native';
 import { fetchData } from '../AwsFunctions';
 import { VictoryChart, VictoryLine, VictoryAxis } from 'victory-native';
+import { useNavigation } from '@react-navigation/native';
 
 const Analytics = () => {
   const [tableData, setTableData] = useState([]);
+  const navigation = useNavigation();
 
   useEffect(() => {
     fetchDataFromDynamoDb();
-  }, []); // Fetch data on component mount
+
+    // Customize the header when the component mounts
+    navigation.setOptions({
+      headerTitle: 'Analytics',
+      headerStyle: {
+        backgroundColor: 'brown', // Background color
+      },
+      headerTintColor: 'white', // Text color
+      headerTitleAlign: 'left', // Align title to the left
+    });
+  }, [navigation]);
 
   const fetchDataFromDynamoDb = async () => {
     try {
@@ -30,7 +42,6 @@ const Analytics = () => {
 
   return (
     <View style={styles.container}>
-      <Text>Open up Analytics.js to start working on your analytics!</Text>
 
       <TouchableOpacity onPress={() => fetchDataFromDynamoDb()} style={styles.button}>
         <Text style={styles.buttonText}>Fetch Data</Text>
@@ -66,7 +77,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   button: {
-    backgroundColor: 'blue',
+    backgroundColor: 'brown',
     padding: 10,
     margin: 10,
     borderRadius: 5,
