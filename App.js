@@ -8,6 +8,8 @@ import LandingPage from './modules/LandingPage';
 import LoginScreen from './modules/LoginScreen';
 import Analytics from './modules/Analytics';
 import MotorState from './modules/MotorState';
+import Waterlevel from './modules/Waterlevel';
+import TankScreen from './modules/TankScreen';
 
 const Drawer = createDrawerNavigator();
 const Stack = createStackNavigator();
@@ -49,6 +51,16 @@ const App = () => {
           label="Analytics"
           onPress={() => handleRoutePress('Analytics')}
           labelStyle={getLabelStyle('Analytics')}
+        />
+        <DrawerItem
+          label="Water Level"
+          onPress={() => handleRoutePress('Waterlevel')}
+          labelStyle={getLabelStyle('Waterlevel')}
+        />
+        <DrawerItem
+          label="Tank Screen"
+          onPress={() => handleRoutePress('TankScreen')}
+          labelStyle={getLabelStyle('TankScreen')}
         />
         {loggedIn && (
           <DrawerItem
@@ -103,6 +115,24 @@ const App = () => {
               headerStyle: { backgroundColor: 'brown' },
               headerTintColor: 'white',
             })}
+          />
+          <Drawer.Screen
+          name="Waterlevel"
+          component={Waterlevel}
+          options={({ route }) => ({
+            headerTitle: () => <CustomAppBar route={route} />,
+            headerStyle: { backgroundColor: 'brown' },
+            headerTintColor: 'white',
+          })}
+          />
+          <Drawer.Screen
+          name="TankScreen"
+          component={TankScreen}
+          options={({ route }) => ({
+            headerTitle: () => <CustomAppBar route={route} />,
+            headerStyle: { backgroundColor: 'brown' },
+            headerTintColor: 'white',
+          })}
           />
         </Drawer.Navigator>
       ) : (
