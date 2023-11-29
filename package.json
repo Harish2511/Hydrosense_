@@ -9,7 +9,8 @@
     "web": "expo start --web"
   },
   "dependencies": {
-    "@react-native-picker/picker": "2.4.10",
+    "@expo/vector-icons": "^13.0.0",
+    "@react-native-picker/picker": "^2.4.10",
     "@react-navigation/drawer": "^6.6.6",
     "@react-navigation/native": "^6.1.9",
     "@react-navigation/stack": "^6.3.20",
@@ -25,8 +26,7 @@
     "react-native-reanimated": "~3.3.0",
     "react-native-responsive-linechart": "^5.7.1",
     "react-native-svg": "13.9.0",
-    "victory-native": "^36.6.12",
-    "@expo/vector-icons": "^13.0.0"
+    "victory-native": "^36.6.12"
   },
   "devDependencies": {
     "@babel/core": "^7.20.0"

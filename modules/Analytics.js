@@ -46,7 +46,7 @@ const Analytics = () => {
       <TouchableOpacity onPress={() => fetchDataFromDynamoDb()} style={styles.button}>
         <Text style={styles.buttonText}>Fetch Data</Text>
       </TouchableOpacity>
-
+      
       <Text>Table Data:</Text>
       {lastThreeRecords.map((item, index) => {
         console.log('Item:', item); // Log the item
