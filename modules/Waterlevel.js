@@ -21,80 +21,87 @@ const Waterlevel = () => {
     });
   }, [navigation]);
 
+  const getRandomWaterLevel = () => Math.floor(Math.random() * 100);
+
+  const getLevelCategory = (waterLevel) => {
+    if (waterLevel >= 90) return 'A';
+    if (waterLevel >= 75) return 'B';
+    if (waterLevel >= 50) return 'C';
+    if (waterLevel >= 25) return 'D';
+    return 'E';
+  };
+
+  const getRiskLevel = (levelCategory) => {
+    if (levelCategory === 'A' || levelCategory === 'B') return 'LOW';
+    if (levelCategory === 'C' || levelCategory === 'D') return 'MEDIUM';
+    return 'HIGH';
+  };
+
   const [tank1Data, setTank1Data] = useState({
-    waterLevel: 75,
-    levelCategory: 'A',
-    riskLevel: 'LOW',
+    waterLevel: getRandomWaterLevel(),
     timestamp: new Date(),
   });
 
   const [tank2Data, setTank2Data] = useState({
-    waterLevel: 45,
-    levelCategory: 'C',
-    riskLevel: 'MEDIUM',
+    waterLevel: getRandomWaterLevel(),
     timestamp: new Date(),
   });
 
   const [sumpData, setSumpData] = useState({
-    waterLevel: 60,
-    levelCategory: 'B',
-    riskLevel: 'MEDIUM',
+    waterLevel: getRandomWaterLevel(),
     timestamp: new Date(),
   });
 
   const handleRefresh = () => {
-    // Simulating new data on refresh
     setTank1Data({
-      waterLevel: Math.floor(Math.random() * 100),
-      levelCategory: String.fromCharCode(65 + Math.floor(Math.random() * 5)), // Random 'A' to 'E'
-      riskLevel: ['LOW', 'MEDIUM', 'HIGH'][Math.floor(Math.random() * 3)], // Random 'LOW', 'MEDIUM', 'HIGH'
+      waterLevel: getRandomWaterLevel(),
       timestamp: new Date(),
     });
 
     setTank2Data({
-      waterLevel: Math.floor(Math.random() * 100),
-      levelCategory: String.fromCharCode(65 + Math.floor(Math.random() * 5)),
-      riskLevel: ['LOW', 'MEDIUM', 'HIGH'][Math.floor(Math.random() * 3)],
+      waterLevel: getRandomWaterLevel(),
       timestamp: new Date(),
     });
 
     setSumpData({
-      waterLevel: Math.floor(Math.random() * 100),
-      levelCategory: String.fromCharCode(65 + Math.floor(Math.random() * 5)),
-      riskLevel: ['LOW', 'MEDIUM', 'HIGH'][Math.floor(Math.random() * 3)],
+      waterLevel: getRandomWaterLevel(),
       timestamp: new Date(),
     });
   };
 
   useFocusEffect(
     useCallback(() => {
-      // Update timestamp when the component is focused
       setTank1Data((prevData) => ({ ...prevData, timestamp: new Date() }));
       setTank2Data((prevData) => ({ ...prevData, timestamp: new Date() }));
       setSumpData((prevData) => ({ ...prevData, timestamp: new Date() }));
     }, [])
   );
 
-  const renderTank = (tankData, tankNumber, backgroundColor) => (
-    <View style={[styles.tankContainer, { backgroundColor }]} key={tankNumber}>
-      <View style={styles.tankBox}>
-        <Text style={styles.heading}>Tank - {tankNumber}</Text>
-        <View style={styles.divider}></View>
-        <Text>Water Level: {tankData.waterLevel}</Text>
-        <View style={styles.line}></View>
-        <Text>Level Category: {tankData.levelCategory}</Text>
-        <View style={styles.line}></View>
-        <Text>Risk Level: {tankData.riskLevel}</Text>
-        <Text style={styles.timestamp}>Updated on {tankData.timestamp.toString()}</Text>
+  const renderTank = (tankData, tankNumber, backgroundColor, title) => {
+    const levelCategory = getLevelCategory(tankData.waterLevel);
+    const riskLevel = getRiskLevel(levelCategory);
+
+    return (
+      <View style={[styles.tankContainer, { backgroundColor }]} key={tankNumber}>
+        <View style={styles.tankBox}>
+          <Text style={styles.heading}>{title}</Text>
+          <View style={styles.divider}></View>
+          <Text>Water Level: {tankData.waterLevel}</Text>
+          <View style={styles.line}></View>
+          <Text>Level Category: {levelCategory}</Text>
+          <View style={styles.line}></View>
+          <Text>Risk Level: {riskLevel === 'HIGH' ? <Text style={styles.highRisk}>{riskLevel}</Text> : riskLevel}</Text>
+          <Text style={styles.timestamp}>Updated on {tankData.timestamp.toString()}</Text>
+        </View>
       </View>
-    </View>
-  );
+    );
+  };
 
   return (
     <View style={styles.container}>
-      {renderTank(tank1Data, 1, 'lightgray')}
-      {renderTank(tank2Data, 2, 'lightgray')}
-      {renderTank(sumpData, 'Underground Sump', 'lightblue')}
+      {renderTank(tank1Data, 1, 'lightgray', 'Overhead Tank 1')}
+      {renderTank(tank2Data, 2, 'lightgray', 'Overhead Tank 2')}
+      {renderTank(sumpData, 'Underground Sump', 'lightblue', 'Underground Sump')}
     </View>
   );
 };
@@ -138,6 +145,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 7,
+  },
+  highRisk: {
+    color: 'red',
+    fontWeight: 'bold',
   },
 });
 
