@@ -84,7 +84,11 @@ const MotorState = () => {
             <View key={index} style={styles.tableRow}>
               <Text style={styles.tableCell}>{row.tankType}</Text>
               <Text style={styles.tableCell}>{row.waterLevel}</Text>
-              <Text style={styles.tableCell}>{row.motorStatus}</Text>
+              {row.tankType === 'UG S' ? (
+                <Text style={styles.tableCellSubtitle}>-</Text>
+              ) : (
+                <Text style={styles.tableCell}>{row.motorStatus}</Text>
+              )}
             </View>
           ))}
         </View>
@@ -168,6 +172,7 @@ const styles = StyleSheet.create({
     padding: 5,
     fontWeight: 'bold',
     textAlign: 'center',
+    color: 'black',
   },
 });
 
