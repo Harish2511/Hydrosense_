@@ -44,7 +44,7 @@ const Tank = ({ fillPercentage }) => {
 };
 
 const TankScreen = () => {
-  const fillPercentage = 30; // Replace this with your actual sensor data
+  const fillPercentage = 80; // Replace this with your actual sensor data
 
   return (
     <View style={styles.container}>
