@@ -6,7 +6,8 @@ import {
   StatusBar,
   StyleSheet,
   Dimensions,
-  ActivityIndicator,
+  ScrollView,
+  RefreshControl,
 } from 'react-native';
 import {
   VictoryChart,
@@ -16,42 +17,19 @@ import {
   VictoryTooltip,
   VictoryBar,
   VictoryStack,
+  VictoryPie,
 } from 'victory-native';
 import { fetchData } from '../AwsFunctions';
 import { useNavigation } from '@react-navigation/native';
-import _debounce from 'lodash/debounce';
 
 const Analytics = () => {
   const [tableData, setTableData] = useState([]);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const navigation = useNavigation();
-
-  useEffect(() => {
-    fetchDataFromDynamoDb();
-
-    // Customize the header when the component mounts
-    navigation.setOptions({
-      headerTitle: 'Water Usage Analytics',
-      headerStyle: {
-        backgroundColor: 'darkslateblue',
-      },
-      headerTintColor: 'white',
-      headerTitleAlign: 'center',
-    });
-
-    // Setup interval for real-time updates
-    const interval = setInterval(fetchDataFromDynamoDb, 60000); // Refresh every 1 minute
-
-    // Cleanup interval on component unmount
-    return () => clearInterval(interval);
-  }, [navigation]);
-
-  // Debounce the fetchDataFromDynamoDb function to avoid multiple rapid calls
-  const debouncedFetchData = _debounce(fetchDataFromDynamoDb, 1000);
 
   const fetchDataFromDynamoDb = async () => {
     try {
-      setIsLoading(true);
+      setIsRefreshing(true);
       const data = await fetchData('ultraAwsTable');
       console.log('Raw DynamoDB Response:', data);
 
@@ -60,10 +38,10 @@ const Analytics = () => {
         setTableData(data);
       }
 
-      setIsLoading(false);
+      setIsRefreshing(false);
     } catch (error) {
       console.error('Error fetching data:', error);
-      setIsLoading(false);
+      setIsRefreshing(false);
     }
   };
 
@@ -76,97 +54,115 @@ const Analytics = () => {
   const averageData = calculateDailyAverage(tableData);
   const currentMonthAverage = calculateMonthlyAverage(tableData);
 
-  const dailyCategoriesData = calculateDailyCategories(tableData);
+  useEffect(() => {
+    fetchDataFromDynamoDb();
+  }, []);
 
   return (
-    <View style={styles.container}>
-      <TouchableOpacity onPress={debouncedFetchData} style={styles.button}>
+    <ScrollView
+      contentContainerStyle={styles.container}
+      refreshControl={
+        <RefreshControl
+          refreshing={isRefreshing}
+          onRefresh={fetchDataFromDynamoDb}
+          colors={['#8B4513']} // Color of the refresh indicator
+        />
+      }
+    >
+      <TouchableOpacity onPress={fetchDataFromDynamoDb} style={styles.button}>
         <Text style={styles.buttonText}>Refresh Data</Text>
       </TouchableOpacity>
 
-      {isLoading ? (
-        <ActivityIndicator style={styles.loader} size="large" color="#3498db" />
-      ) : (
-        <View>
-          {lastRecord && (
-            <View style={styles.lastRecordContainer}>
-              <Text style={styles.lastRecordText}>
-                Last Record: ID {lastRecord.id}, Distance {lastRecord.Distance} gallons
-              </Text>
-            </View>
-          )}
+      <View>
+        {lastRecord && (
+          <View style={styles.lastRecordContainer}>
+            <Text style={styles.lastRecordText}>
+              Last Record: ID {lastRecord.id}, Distance {lastRecord.Distance} gallons
+            </Text>
+          </View>
+        )}
 
-          <Text style={styles.sectionHeader}>Last 20 Records Line Chart:</Text>
-          <VictoryChart
-            theme={VictoryTheme.material}
-            width={Dimensions.get('window').width - 16}
-            height={220}
-            domainPadding={{ x: 20 }}
-          >
-            <VictoryAxis
-              tickValues={labelData.filter((_, index) => index % 2 === 0)}
-              style={{ tickLabels: { fontSize: 8, angle: 45 } }}
-            />
-            <VictoryAxis dependentAxis />
-            <VictoryLine
-              data={distanceData.map((d, i) => ({ x: labelData[i], y: d }))}
-              style={{
-                data: { stroke: 'darkslateblue', strokeWidth: 2 },
-                labels: { fontSize: 8, fill: 'darkslateblue' },
-              }}
-              labels={({ datum }) => `${datum.y} gallons`}
-              labelComponent={<VictoryTooltip />}
-            />
-          </VictoryChart>
+        {/* Line Chart */}
+        <VictoryChart
+          theme={VictoryTheme.material}
+          width={Dimensions.get('window').width - 16}
+          height={220}
+          domainPadding={{ x: 20 }}
+        >
+          <VictoryAxis
+            tickValues={labelData.map((_, index) => index)}
+            tickFormat={labelData}
+            style={{ tickLabels: { fontSize: 8, angle: 45 } }}
+          />
+          <VictoryAxis dependentAxis />
+          <VictoryLine
+            data={distanceData.map((d, i) => ({ x: i, y: d }))}
+            style={{
+              data: { stroke: '#8B4513', strokeWidth: 2 },
+              labels: { fontSize: 8, fill: '#8B4513' },
+            }}
+            labels={({ datum }) => `${datum.y} gallons`}
+            labelComponent={<VictoryTooltip />}
+          />
+        </VictoryChart>
 
-          <Text style={styles.sectionHeader}>Daily Water Usage Averages (Bar Chart):</Text>
-          <VictoryChart
-            theme={VictoryTheme.material}
-            width={Dimensions.get('window').width - 16}
-            height={220}
-            domainPadding={{ x: 20 }}
-          >
-            <VictoryAxis
-              tickValues={averageData.map((item) => item.day)}
-              style={{ tickLabels: { fontSize: 8, angle: 45 } }}
-            />
-            <VictoryAxis dependentAxis />
+        {/* Bar Chart */}
+        <VictoryChart
+          theme={VictoryTheme.material}
+          width={Dimensions.get('window').width - 16}
+          height={220}
+          domainPadding={{ x: 20 }}
+        >
+          <VictoryAxis
+            tickValues={averageData.map((_, index) => index)}
+            tickFormat={averageData.map((item) => item.day)}
+            style={{ tickLabels: { fontSize: 8, angle: 45 } }}
+          />
+          <VictoryAxis dependentAxis />
+          <VictoryBar
+            data={averageData.map((item, index) => ({ x: index, y: item.average }))}
+            style={{ data: { fill: '#8B4513' } }}
+            labels={({ datum }) => `${datum.y.toFixed(2)} gallons`}
+            labelComponent={<VictoryTooltip />}
+          />
+        </VictoryChart>
+
+        {/* Stacked Bar Chart */}
+        <VictoryChart
+          theme={VictoryTheme.material}
+          width={Dimensions.get('window').width - 16}
+          height={220}
+          domainPadding={{ x: 20 }}
+        >
+          <VictoryAxis
+            tickValues={averageData.map((_, index) => index)}
+            tickFormat={averageData.map((item) => item.day)}
+            style={{ tickLabels: { fontSize: 8, angle: 45 } }}
+          />
+          <VictoryAxis dependentAxis />
+          <VictoryStack colorScale={['#8B4513', '#CD853F']}>
             <VictoryBar
-              data={averageData.map((item) => ({ x: item.day, y: item.average }))}
-              style={{ data: { fill: 'darkslateblue' } }}
+              data={averageData.map((item, index) => ({ x: index, y: item.average }))}
               labels={({ datum }) => `${datum.y.toFixed(2)} gallons`}
               labelComponent={<VictoryTooltip />}
             />
-          </VictoryChart>
+          </VictoryStack>
+        </VictoryChart>
 
-          <Text style={styles.sectionHeader}>Current Month Average: {currentMonthAverage.toFixed(2)} gallons</Text>
+        {/* Pie Chart */}
+        <VictoryPie
+          data={averageData.map((item) => ({ x: item.day, y: item.average }))}
+          colorScale={['#8B4513', '#CD853F', '#D2691E', '#A0522D', '#DEB887']}
+          labels={({ datum }) => `${datum.x}\n${(datum.y / currentMonthAverage * 100).toFixed(2)}%`}
+          labelRadius={({ innerRadius }) => innerRadius + 50}
+          labelComponent={<VictoryTooltip />}
+        />
 
-          <Text style={styles.sectionHeader}>Daily Water Usage Categories (Stacked Bar Chart):</Text>
-          <VictoryChart
-            theme={VictoryTheme.material}
-            width={Dimensions.get('window').width - 16}
-            height={220}
-            domainPadding={{ x: 20 }}
-          >
-            <VictoryAxis
-              tickValues={labelData.filter((_, index) => index % 2 === 0)}
-              style={{ tickLabels: { fontSize: 8, angle: 45 } }}
-            />
-            <VictoryAxis dependentAxis />
-            <VictoryStack colorScale="cool">
-              {dailyCategoriesData.map((category) => (
-                <VictoryBar
-                  key={category.name}
-                  data={category.data.map((item, i) => ({ x: labelData[i], y: item }))}
-                />
-              ))}
-            </VictoryStack>
-          </VictoryChart>
-        </View>
-      )}
+        <Text style={styles.sectionHeader}>Current Month Average: {currentMonthAverage.toFixed(2)} gallons</Text>
+      </View>
 
       <StatusBar style="auto" />
-    </View>
+    </ScrollView>
   );
 };
 
@@ -203,25 +199,12 @@ const calculateMonthlyAverage = (data) => {
   return monthlyData.sum / monthlyData.count;
 };
 
-const calculateDailyCategories = (data) => {
-  const categories = Array.from(new Set(data.map((entry) => entry.Category)));
-
-  return categories.map((category) => {
-    const categoryData = data.map((entry) => (entry.Category === category ? entry.Distance : 0));
-    return { name: category, data: categoryData };
-  });
-};
-
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#ecf0f1',
     padding: 16,
   },
   button: {
-    backgroundColor: 'darkslateblue',
+    backgroundColor: '#8B4513',
     padding: 10,
     margin: 10,
     borderRadius: 5,
@@ -230,11 +213,8 @@ const styles = StyleSheet.create({
     color: 'white',
     fontWeight: 'bold',
   },
-  loader: {
-    marginTop: 10,
-  },
   lastRecordContainer: {
-    backgroundColor: 'lightgray',
+    backgroundColor: '#D2B48C',
     padding: 10,
     margin: 10,
     borderRadius: 5,
@@ -247,14 +227,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginTop: 10,
     marginBottom: 5,
-    color: 'darkslateblue',
-  },
-  itemContainer: {
-    borderWidth: 1,
-    borderColor: '#bdc3c7',
-    padding: 10,
-    margin: 5,
-    borderRadius: 5,
+    color: '#8B4513',
   },
 });
 
