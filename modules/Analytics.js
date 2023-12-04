@@ -107,56 +107,42 @@ const Analytics = () => {
         </VictoryChart>
 
         {/* Bar Chart */}
-        <VictoryChart
-          theme={VictoryTheme.material}
-          width={Dimensions.get('window').width - 16}
-          height={220}
-          domainPadding={{ x: 20 }}
-        >
-          <VictoryAxis
-            tickValues={averageData.map((_, index) => index)}
-            tickFormat={averageData.map((item) => item.day)}
-            style={{ tickLabels: { fontSize: 8, angle: 45 } }}
-          />
-          <VictoryAxis dependentAxis />
-          <VictoryBar
-            data={averageData.map((item, index) => ({ x: index, y: item.average }))}
-            style={{ data: { fill: '#8B4513' } }}
-            labels={({ datum }) => `${datum.y.toFixed(2)} gallons`}
-            labelComponent={<VictoryTooltip />}
-          />
-        </VictoryChart>
-
-        {/* Stacked Bar Chart */}
-        <VictoryChart
-          theme={VictoryTheme.material}
-          width={Dimensions.get('window').width - 16}
-          height={220}
-          domainPadding={{ x: 20 }}
-        >
-          <VictoryAxis
-            tickValues={averageData.map((_, index) => index)}
-            tickFormat={averageData.map((item) => item.day)}
-            style={{ tickLabels: { fontSize: 8, angle: 45 } }}
-          />
-          <VictoryAxis dependentAxis />
-          <VictoryStack colorScale={['#8B4513', '#CD853F']}>
+        <View style={styles.chartContainer}>
+          <Text style={styles.sectionHeader}>Daily Water Usage Averages:</Text>
+          <VictoryChart
+            theme={VictoryTheme.material}
+            width={Dimensions.get('window').width - 16}
+            height={220}
+            domainPadding={{ x: 20 }}
+          >
+            <VictoryAxis
+              tickValues={averageData.map((_, index) => index)}
+              tickFormat={averageData.map((item) => item.day)}
+              style={{ tickLabels: { fontSize: 10, angle: 45 } }}
+            />
+            <VictoryAxis dependentAxis />
             <VictoryBar
               data={averageData.map((item, index) => ({ x: index, y: item.average }))}
-              labels={({ datum }) => `${datum.y.toFixed(2)} gallons`}
+              style={{ data: { fill: '#8B4513' } }}
+              labels={({ datum }) => `${datum.y.toFixed(2)}\ngallons`}
               labelComponent={<VictoryTooltip />}
             />
-          </VictoryStack>
-        </VictoryChart>
+          </VictoryChart>
+        </View>
+
+        
 
         {/* Pie Chart */}
-        <VictoryPie
-          data={averageData.map((item) => ({ x: item.day, y: item.average }))}
-          colorScale={['#8B4513', '#CD853F', '#D2691E', '#A0522D', '#DEB887']}
-          labels={({ datum }) => `${datum.x}\n${(datum.y / currentMonthAverage * 100).toFixed(2)}%`}
-          labelRadius={({ innerRadius }) => innerRadius + 50}
-          labelComponent={<VictoryTooltip />}
-        />
+        <View style={styles.chartContainer}>
+          <Text style={styles.sectionHeader}>Monthly Water Usage Distribution:</Text>
+          <VictoryPie
+            data={averageData.map((item) => ({ x: item.day, y: item.average }))}
+            colorScale={['#8B4513', '#CD853F', '#D2691E', '#A0522D', '#DEB887']}
+            labels={({ datum }) => `${datum.x}\n${(datum.y / currentMonthAverage * 100).toFixed(2)}%`}
+            labelRadius={({ innerRadius }) => innerRadius + 50}
+            labelComponent={<VictoryTooltip />}
+          />
+        </View>
 
         <Text style={styles.sectionHeader}>Current Month Average: {currentMonthAverage.toFixed(2)} gallons</Text>
       </View>
@@ -221,6 +207,9 @@ const styles = StyleSheet.create({
   },
   lastRecordText: {
     fontWeight: 'bold',
+  },
+  chartContainer: {
+    marginBottom: 20,
   },
   sectionHeader: {
     fontSize: 18,

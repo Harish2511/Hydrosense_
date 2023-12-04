@@ -16,6 +16,7 @@
     "@react-navigation/material-top-tabs": "^6.6.5",
     "@react-navigation/native": "^6.1.9",
     "@react-navigation/stack": "^6.3.20",
+    "@types/react": "~18.2.14",
     "aws-sdk": "^2.1502.0",
     "babel-plugin-module-resolver": "^5.0.0",
     "expo": "^49.0.21",
@@ -23,15 +24,22 @@
     "react": "18.2.0",
     "react-native": "0.72.6",
     "react-native-chart-kit": "^6.12.0",
+    "react-native-flexbox-grid": "^0.3.2",
+    "react-native-gesture-handler": "^2.14.0",
     "react-native-gifted-charts": "^1.3.23",
     "react-native-pure-chart": "^0.0.24",
     "react-native-reanimated": "~3.3.0",
     "react-native-responsive-linechart": "^5.7.1",
     "react-native-svg": "13.9.0",
+    "react-navigation": "^4.4.4",
+    "react-navigation-stack": "^2.10.4",
+    "typescript": "^5.1.3",
     "victory-native": "^36.6.12"
   },
   "devDependencies": {
-    "@babel/core": "^7.20.0"
+    "@babel/core": "^7.20.0",
+    "css-loader": "^6.8.1",
+    "style-loader": "^3.3.3"
   },
   "private": true
 }
