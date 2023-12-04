@@ -10,6 +10,7 @@ import Analytics from './modules/Analytics';
 import MotorState from './modules/MotorState';
 import Waterlevel from './modules/Waterlevel';
 import TankScreen from './modules/TankScreen';
+import Forecasting from './modules/forecasting';
 
 const Drawer = createDrawerNavigator();
 const Stack = createStackNavigator();
@@ -61,6 +62,11 @@ const App = () => {
           label="Tank Screen"
           onPress={() => handleRoutePress('TankScreen')}
           labelStyle={getLabelStyle('TankScreen')}
+        />
+        <DrawerItem
+          label="Water Forecasting"
+          onPress={() => handleRoutePress('Forecasting')}
+          labelStyle={getLabelStyle('Forecasting')}
         />
         {loggedIn && (
           <DrawerItem
@@ -128,6 +134,15 @@ const App = () => {
           <Drawer.Screen
           name="TankScreen"
           component={TankScreen}
+          options={({ route }) => ({
+            headerTitle: () => <CustomAppBar route={route} />,
+            headerStyle: { backgroundColor: 'brown' },
+            headerTintColor: 'white',
+          })}
+          />
+          <Drawer.Screen
+          name="Forecasting"
+          component={Forecasting}
           options={({ route }) => ({
             headerTitle: () => <CustomAppBar route={route} />,
             headerStyle: { backgroundColor: 'brown' },
