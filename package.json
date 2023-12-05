@@ -25,7 +25,7 @@
     "react-native": "0.72.6",
     "react-native-chart-kit": "^6.12.0",
     "react-native-flexbox-grid": "^0.3.2",
-    "react-native-gesture-handler": "^2.14.0",
+    "react-native-gesture-handler": "~2.12.0",
     "react-native-gifted-charts": "^1.3.23",
     "react-native-pure-chart": "^0.0.24",
     "react-native-reanimated": "~3.3.0",

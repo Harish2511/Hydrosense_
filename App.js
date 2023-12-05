@@ -3,7 +3,7 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createDrawerNavigator, DrawerContentScrollView, DrawerItem } from '@react-navigation/drawer';
 import { createStackNavigator } from '@react-navigation/stack';
 import { Text, View, TouchableOpacity } from 'react-native';
-import { Ionicons } from '@expo/vector-icons'; // Import Ionicons for the log-out icon
+import { Ionicons } from '@expo/vector-icons';
 import LandingPage from './modules/LandingPage';
 import LoginScreen from './modules/LoginScreen';
 import Analytics from './modules/Analytics';
@@ -11,6 +11,7 @@ import MotorState from './modules/MotorState';
 import Waterlevel from './modules/Waterlevel';
 import TankScreen from './modules/TankScreen';
 import Forecasting from './modules/forecasting';
+import { Image } from 'react-native'; // Import Image from react-native
 
 const Drawer = createDrawerNavigator();
 const Stack = createStackNavigator();
@@ -88,7 +89,7 @@ const App = () => {
   };
 
   const CustomAppBar = ({ route }) => {
-    const title = route.params ? route.params.title : 'Options';
+    const title = route.params ? route.params.title : 'Tank Screen';
 
     return (
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
