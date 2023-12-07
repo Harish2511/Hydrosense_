@@ -8,6 +8,7 @@ import {
   Dimensions,
   ScrollView,
   RefreshControl,
+  Modal,
 } from 'react-native';
 import {
   VictoryChart,
@@ -16,47 +17,75 @@ import {
   VictoryTheme,
   VictoryTooltip,
   VictoryBar,
-  VictoryStack,
-  VictoryPie,
 } from 'victory-native';
 import { fetchData } from '../AwsFunctions';
 import { useNavigation } from '@react-navigation/native';
+import DateSelector from './DateSelector';
+
+const tankHeight = 300; // Total height of the tank in centimeters
 
 const Analytics = () => {
   const [tableData, setTableData] = useState([]);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [filteredRecords, setFilteredRecords] = useState([]);
+  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [motorState, setMotorState] = useState('');
+  const [category, setCategory] = useState('');
+  const [showCalendar, setShowCalendar] = useState(false);
   const navigation = useNavigation();
 
   const fetchDataFromDynamoDb = async () => {
     try {
       setIsRefreshing(true);
-      const data = await fetchData('ultraAwsTable');
+      const data = await fetchData('SensorTableData');
       console.log('Raw DynamoDB Response:', data);
 
       // Update state only if there is new data
       if (data.length > 0) {
         setTableData(data);
+        filterRecords(data, selectedDate);
+        updateMotorStateAndCategory(selectedDate);
       }
-
-      setIsRefreshing(false);
     } catch (error) {
       console.error('Error fetching data:', error);
+    } finally {
       setIsRefreshing(false);
     }
   };
 
-  const lastRecords = tableData.slice(-20); // Displaying the last 20 records
-  const lastRecord = lastRecords.length > 0 ? lastRecords[lastRecords.length - 1] : null;
+  const filterRecords = (data, date) => {
+    const formattedDate = date.toISOString().split('T')[0];
+    const filteredData = data.filter((item) => item.Date === formattedDate);
+    setFilteredRecords(filteredData.slice(-15)); // Displaying the last 30 records
+  };
+ 
+  const onDateChange = (newDate) => {
+    setSelectedDate(newDate);
+    filterRecords(tableData, newDate);
+    updateMotorStateAndCategory(newDate);
+  };
 
-  const labelData = lastRecords.map((item) => item.id || '');
-  const distanceData = lastRecords.map((item) => item.Distance || 0);
+  const updateMotorStateAndCategory = (date) => {
+    const formattedDate = date.toISOString().split('T')[0];
+    const lastRecord = tableData.find((item) => item.Date === formattedDate);
 
-  const averageData = calculateDailyAverage(tableData);
-  const currentMonthAverage = calculateMonthlyAverage(tableData);
+    setMotorState(lastRecord?.motorstate || '');
+    setCategory(lastRecord?.Category || '');
+  };
+
+  const labelData = filteredRecords.map((item) => item.Time || '');
+  const distanceData = filteredRecords.map((item) => tankHeight - item.Distance || 0);
+
+  const averageWaterUsage = calculateAverageWaterUsage(filteredRecords);
+  const dailyUsageStatistics = calculateDailyUsageStatistics(filteredRecords);
 
   useEffect(() => {
     fetchDataFromDynamoDb();
   }, []);
+
+  const toggleCalendarModal = () => {
+    setShowCalendar(!showCalendar);
+  };
 
   return (
     <ScrollView
@@ -73,16 +102,37 @@ const Analytics = () => {
         <Text style={styles.buttonText}>Refresh Data</Text>
       </TouchableOpacity>
 
-      <View>
-        {lastRecord && (
-          <View style={styles.lastRecordContainer}>
-            <Text style={styles.lastRecordText}>
-              Last Record: ID {lastRecord.id}, Distance {lastRecord.Distance} gallons
-            </Text>
-          </View>
-        )}
+      {/* Date Selector */}
+      <TouchableOpacity onPress={toggleCalendarModal} style={styles.datePickerButton}>
+        <Text style={styles.datePickerButtonText}>
+          Select a Date to View Water Level
+        </Text>
+      </TouchableOpacity>
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={showCalendar}
+        onRequestClose={toggleCalendarModal}
+      >
+        <View style={styles.modalContainer}>
+          <DateSelector onDateChange={onDateChange} />
+          <TouchableOpacity onPress={toggleCalendarModal} style={styles.modalCloseButton}>
+            <Text style={styles.modalCloseButtonText}>Close Calendar</Text>
+          </TouchableOpacity>
+        </View>
+      </Modal>
 
-        {/* Line Chart */}
+      <View style={styles.insightsContainer}>
+        <Text style={styles.insightsText}>
+          Motor State: {motorState || 'N/A'}
+        </Text>
+        <Text style={styles.insightsText}>
+          Category: {category || 'N/A'}
+        </Text>
+      </View>
+
+      <View>
+        {/* Line Chart for Last 30 Records */}
         <VictoryChart
           theme={VictoryTheme.material}
           width={Dimensions.get('window').width - 16}
@@ -101,50 +151,44 @@ const Analytics = () => {
               data: { stroke: '#8B4513', strokeWidth: 2 },
               labels: { fontSize: 8, fill: '#8B4513' },
             }}
-            labels={({ datum }) => `${datum.y} gallons`}
+            labels={({ datum }) => `${datum.y} cm`}
             labelComponent={<VictoryTooltip />}
           />
         </VictoryChart>
+      </View>
 
-        {/* Bar Chart */}
-        <View style={styles.chartContainer}>
-          <Text style={styles.sectionHeader}>Daily Water Usage Averages:</Text>
-          <VictoryChart
-            theme={VictoryTheme.material}
-            width={Dimensions.get('window').width - 16}
-            height={220}
-            domainPadding={{ x: 20 }}
-          >
-            <VictoryAxis
-              tickValues={averageData.map((_, index) => index)}
-              tickFormat={averageData.map((item) => item.day)}
-              style={{ tickLabels: { fontSize: 10, angle: 45 } }}
-            />
-            <VictoryAxis dependentAxis />
-            <VictoryBar
-              data={averageData.map((item, index) => ({ x: index, y: item.average }))}
-              style={{ data: { fill: '#8B4513' } }}
-              labels={({ datum }) => `${datum.y.toFixed(2)}\ngallons`}
-              labelComponent={<VictoryTooltip />}
-            />
-          </VictoryChart>
-        </View>
+      {/* Additional Insights */}
+      <Text style={styles.sectionHeader}>Additional Insights:</Text>
 
-        
-
-        {/* Pie Chart */}
-        <View style={styles.chartContainer}>
-          <Text style={styles.sectionHeader}>Monthly Water Usage Distribution:</Text>
-          <VictoryPie
-            data={averageData.map((item) => ({ x: item.day, y: item.average }))}
-            colorScale={['#8B4513', '#CD853F', '#D2691E', '#A0522D', '#DEB887']}
-            labels={({ datum }) => `${datum.x}\n${(datum.y / currentMonthAverage * 100).toFixed(2)}%`}
-            labelRadius={({ innerRadius }) => innerRadius + 50}
+      {/* Bar Chart for Daily Usage Statistics */}
+      <View style={styles.chartContainer}>
+        <Text style={styles.subSectionHeader}>Daily Water Usage Statistics:</Text>
+        <VictoryChart
+          theme={VictoryTheme.material}
+          width={Dimensions.get('window').width - 16}
+          height={220}
+          domainPadding={{ x: 20 }}
+        >
+          <VictoryAxis
+            tickValues={dailyUsageStatistics.map((_, index) => index)}
+            tickFormat={dailyUsageStatistics.map((item) => item.day)}
+            style={{ tickLabels: { fontSize: 10, angle: 45 } }}
+          />
+          <VictoryAxis dependentAxis />
+          <VictoryBar
+            data={dailyUsageStatistics.map((item, index) => ({ x: index, y: item.usage }))}
+            style={{ data: { fill: '#8B4513' } }}
+            labels={({ datum }) => `${datum.y.toFixed(2)} cm`}
             labelComponent={<VictoryTooltip />}
           />
-        </View>
+        </VictoryChart>
+      </View>
 
-        <Text style={styles.sectionHeader}>Current Month Average: {currentMonthAverage.toFixed(2)} gallons</Text>
+      {/* Average Water Usage */}
+      <View style={styles.insightsContainer}>
+        <Text style={styles.insightsText}>
+          Average Water Usage: {averageWaterUsage.toFixed(2)} cm
+        </Text>
       </View>
 
       <StatusBar style="auto" />
@@ -152,37 +196,26 @@ const Analytics = () => {
   );
 };
 
-const calculateDailyAverage = (data) => {
+const calculateAverageWaterUsage = (data) => {
+  const totalUsage = data.reduce((acc, entry) => acc + (tankHeight - entry.Distance), 0);
+  return totalUsage / data.length;
+};
+
+const calculateDailyUsageStatistics = (data) => {
   const dailyData = data.reduce((acc, entry) => {
-    const date = entry.id; // Assuming 'id' is a valid date string
-    if (!acc[date]) {
-      acc[date] = { sum: 0, count: 0 };
+    const dateTime = entry.Date + ' ' + entry.Time;
+    if (!acc[dateTime]) {
+      acc[dateTime] = { sum: 0, count: 0 };
     }
-    acc[date].sum += entry.Distance;
-    acc[date].count += 1;
+    acc[dateTime].sum += tankHeight - entry.Distance; // Adjusted for tank height
+    acc[dateTime].count += 1;
     return acc;
   }, {});
 
-  return Object.keys(dailyData).map((date) => ({
-    day: date,
-    average: dailyData[date].sum / dailyData[date].count,
+  return Object.keys(dailyData).map((dateTime) => ({
+    day: dateTime,
+    usage: dailyData[dateTime].sum / dailyData[dateTime].count,
   }));
-};
-
-const calculateMonthlyAverage = (data) => {
-  const currentDate = new Date();
-  const currentMonth = currentDate.getMonth() + 1; // Months are zero-based in JavaScript
-  const monthlyData = data.reduce((acc, entry) => {
-    const entryDate = new Date(entry.id);
-    const entryMonth = entryDate.getMonth() + 1;
-    if (entryMonth === currentMonth) {
-      acc.sum += entry.Distance;
-      acc.count += 1;
-    }
-    return acc;
-  }, { sum: 0, count: 0 });
-
-  return monthlyData.sum / monthlyData.count;
 };
 
 const styles = StyleSheet.create({
@@ -199,24 +232,60 @@ const styles = StyleSheet.create({
     color: 'white',
     fontWeight: 'bold',
   },
-  lastRecordContainer: {
+  datePickerButton: {
+    backgroundColor: '#8B4513',
+    padding: 10,
+    margin: 10,
+    borderRadius: 5,
+  },
+  datePickerButtonText: {
+    color: 'white',
+    fontWeight: 'bold',
+    textAlign: 'center',
+  },
+  modalContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  modalCloseButton: {
+    backgroundColor: '#8B4513',
+    padding: 10,
+    margin: 10,
+    borderRadius: 5,
+  },
+  modalCloseButtonText: {
+    color: 'white',
+    fontWeight: 'bold',
+    textAlign: 'center',
+  },
+  insightsContainer: {
     backgroundColor: '#D2B48C',
     padding: 10,
     margin: 10,
     borderRadius: 5,
   },
-  lastRecordText: {
+  insightsText: {
     fontWeight: 'bold',
-  },
-  chartContainer: {
-    marginBottom: 20,
+    fontSize: 16,
+    marginBottom: 5,
   },
   sectionHeader: {
     fontSize: 18,
     fontWeight: 'bold',
-    marginTop: 10,
-    marginBottom: 5,
+    marginTop: 20,
+    marginBottom: 10,
     color: '#8B4513',
+  },
+  subSectionHeader: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginBottom: 10,
+    color: '#8B4513',
+  },
+  chartContainer: {
+    marginBottom: 20,
   },
 });
 
