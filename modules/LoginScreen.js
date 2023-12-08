@@ -1,12 +1,27 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { TextInput, View, Text, Image, TouchableOpacity, StyleSheet, SafeAreaView, Switch } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
 
 const LoginScreen = ({ onLogin }) => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
+
+  const navigation = useNavigation();
+
+  useEffect(() => {
+    // Customize the header when the component mounts
+    navigation.setOptions({
+      headerTitle: 'Login',
+      headerStyle: {
+        backgroundColor: 'brown', // Background color
+      },
+      headerTintColor: 'white', // Text color
+      headerTitleAlign: 'left', // Align title to the left
+    });
+  }, [navigation]);
 
   const handleLogin = () => {
     // Add your authentication logic here
@@ -62,7 +77,7 @@ const LoginScreen = ({ onLogin }) => {
       </View>
 
       <TouchableOpacity style={styles.loginBtn} onPress={handleLogin}>
-        <Text style={styles.loginText}>LOGIN</Text>
+        <Text style={styles.loginText}>Login</Text>
       </TouchableOpacity>
     </SafeAreaView>
   );
@@ -75,9 +90,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   logoImage: {
-    width: 100,
-    height: 100,
-    marginBottom: 30,
+    width: 130,
+    height: 130,
+    marginBottom: 35,
   },
   inputView: {
     flexDirection: 'row',
@@ -103,8 +118,8 @@ const styles = StyleSheet.create({
   loginBtn: {
     width: '40%',
     backgroundColor: 'brown',
-    borderRadius: 15,
-    height: 50,
+    borderRadius: 10,
+    height: 45,
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: 20,
@@ -112,6 +127,7 @@ const styles = StyleSheet.create({
   },
   loginText: {
     color: 'white',
+    fontSize: 18,
   },
   toggleView: {
     flexDirection: 'column',

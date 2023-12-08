@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createDrawerNavigator, DrawerContentScrollView, DrawerItem } from '@react-navigation/drawer';
 import { createStackNavigator } from '@react-navigation/stack';
@@ -12,12 +12,14 @@ import Waterlevel from './modules/Waterlevel';
 import TankScreen from './modules/TankScreen';
 import Forecasting from './modules/forecasting';
 import { Image } from 'react-native'; // Import Image from react-native
+import * as Font from 'expo-font';
 
 const Drawer = createDrawerNavigator();
 const Stack = createStackNavigator();
 
 const App = () => {
   const [loggedIn, setLoggedIn] = useState(false);
+  const [fontLoaded, setFontLoaded] = useState(false);
 
   const toggleLoggedIn = () => {
     setLoggedIn(!loggedIn);
@@ -26,6 +28,21 @@ const App = () => {
   const handleLogOut = () => {
     setLoggedIn(false);
   };
+
+  useEffect(() => {
+    // Load the Raleway font asynchronously
+    const loadFont = async () => {
+      await Font.loadAsync({
+        'Raleway-Regular': require('./assets/fonts/Raleway-Regular.ttf'),
+        'Raleway-Bold': require('./assets/fonts/Raleway-Bold.ttf'),
+        // Add more font variants if needed
+      });
+
+      setFontLoaded(true);
+    };
+
+    loadFont();
+  }, []); // Empty dependency array means this effect runs once after the initial render
 
   const CustomDrawerContent = (props) => {
     const [selectedRoute, setSelectedRoute] = useState('MotorState');
@@ -93,87 +110,91 @@ const App = () => {
 
     if (route.name === 'Analytics') {
       title = 'Analytics';
-    }
-
-    if (route.name === 'Forecasting') {
+    } else if (route.name === 'Forecasting') {
       title = 'Water Forecasting';
-    } else if (route.name === 'LoginScreen') {
-      title = 'Login';
+    } else if (route.name === 'TankScreen') {
+      title = 'Tank Screen';
+    } else if (route.name === 'MotorState') {
+      title = 'Motor State';
+    } else if (route.name === 'Waterlevel') {
+      title = 'Water Level';
     }
 
     return (
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
-        <Text style={{ fontSize: 20, fontWeight: 'bold', color: 'white' }}>{title}</Text>
+        <Text style={{ fontSize: 20, fontWeight: 'bold', color: 'white', fontFamily: 'Raleway-Bold' }}>
+          {title}
+        </Text>
       </View>
     );
   };
 
   return (
     <NavigationContainer>
-      {loggedIn ? (
-        <Drawer.Navigator
-          initialRouteName="MotorState"
-          drawerContent={(props) => <CustomDrawerContent {...props} />}
-        >
-          <Drawer.Screen
-            name="MotorState"
-            component={MotorState}
-            options={({ route }) => ({
-              headerTitle: () => <CustomAppBar route={route} />,
-              headerStyle: { backgroundColor: 'brown' },
-              headerTintColor: 'white',
-            })}
-          />
-          <Drawer.Screen
-            name="Analytics"
-            component={Analytics}
-            options={({ route }) => ({
-              headerTitle: () => <CustomAppBar route={route} />,
-              headerStyle: { backgroundColor: 'brown' },
-              headerTintColor: 'white',
-            })}
-          />
-          <Drawer.Screen
-          name="Waterlevel"
-          component={Waterlevel}
-          options={({ route }) => ({
-            headerTitle: () => <CustomAppBar route={route} />,
-            headerStyle: { backgroundColor: 'brown' },
-            headerTintColor: 'white',
-          })}
-          />
-          <Drawer.Screen
-          name="TankScreen"
-          component={TankScreen}
-          options={({ route }) => ({
-            headerTitle: () => <CustomAppBar route={route} />,
-            headerStyle: { backgroundColor: 'brown' },
-            headerTintColor: 'white',
-          })}
-          />
-          <Drawer.Screen
-          name="Forecasting"
-          component={Forecasting}
-          options={({ route }) => ({
-            headerTitle: () => <CustomAppBar route={route} />,
-            headerStyle: { backgroundColor: 'brown' },
-            headerTintColor: 'white',
-          })}
-          />
-        </Drawer.Navigator>
-      ) : (
-        <Stack.Navigator initialRouteName="LandingPage" headerMode="none">
-          <Stack.Screen
-            name="LandingPage"
-            component={LandingPage}
-            options={{ headerShown: false }}
-          />
-          
-          <Stack.Screen name="LoginScreen" options={{ headerShown: false }}>
-          {() => <LoginScreen onLogin={toggleLoggedIn} />}
-          </Stack.Screen>
-
-        </Stack.Navigator>
+      {fontLoaded && ( // Wait for the font to be loaded
+        loggedIn ? (
+          <Drawer.Navigator
+            initialRouteName="MotorState"
+            drawerContent={(props) => <CustomDrawerContent {...props} />}
+          >
+            <Drawer.Screen
+              name="MotorState"
+              component={MotorState}
+              options={({ route }) => ({
+                headerTitle: () => <CustomAppBar route={route} />,
+                headerStyle: { backgroundColor: 'brown' },
+                headerTintColor: 'white',
+              })}
+            />
+            <Drawer.Screen
+              name="Analytics"
+              component={Analytics}
+              options={({ route }) => ({
+                headerTitle: () => <CustomAppBar route={route} />,
+                headerStyle: { backgroundColor: 'brown' },
+                headerTintColor: 'white',
+              })}
+            />
+            <Drawer.Screen
+              name="Waterlevel"
+              component={Waterlevel}
+              options={({ route }) => ({
+                headerTitle: () => <CustomAppBar route={route} />,
+                headerStyle: { backgroundColor: 'brown' },
+                headerTintColor: 'white',
+              })}
+            />
+            <Drawer.Screen
+              name="TankScreen"
+              component={TankScreen}
+              options={({ route }) => ({
+                headerTitle: () => <CustomAppBar route={route} />,
+                headerStyle: { backgroundColor: 'brown' },
+                headerTintColor: 'white',
+              })}
+            />
+            <Drawer.Screen
+              name="Forecasting"
+              component={Forecasting}
+              options={({ route }) => ({
+                headerTitle: () => <CustomAppBar route={route} />,
+                headerStyle: { backgroundColor: 'brown' },
+                headerTintColor: 'white',
+              })}
+            />
+          </Drawer.Navigator>
+        ) : (
+          <Stack.Navigator initialRouteName="LandingPage" headerMode="none">
+            <Stack.Screen
+              name="LandingPage"
+              component={LandingPage}
+              options={{ headerShown: false }}
+            />
+            <Stack.Screen name="LoginScreen" options={{ headerShown: true }}>
+              {() => <LoginScreen onLogin={toggleLoggedIn} />}
+            </Stack.Screen>
+          </Stack.Navigator>
+        )
       )}
     </NavigationContainer>
   );
