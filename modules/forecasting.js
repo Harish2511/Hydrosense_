@@ -40,10 +40,11 @@ const Forecasting = () => {
     try {
       setIsRefreshing(true);
       const data = await fetchData('SensorTableData');
-      console.log('Raw DynamoDB Response:', data);
+     // console.log('Raw DynamoDB Response:', data);
 
       if (data.length > 0) {
         const filteredData = data.filter((item) => item.Distance !== 0);
+      //  console.log(filteredData)
         setTableData(filteredData);
         // Perform time series analysis on the selected date using LSTM
         const lstmResult = await performLSTM(filteredData, selectedDate);
@@ -93,45 +94,78 @@ const Forecasting = () => {
   };
 
   const performLSTM = async (data, date) => {
+    // Ensure there is data available for analysis
     try {
-      const selectedDateData = data.filter((item) => item.Date === date.toISOString().split('T')[0]);
-      const distanceData = selectedDateData.map((item) => item.Distance);
+      // Check if TensorFlow.js is ready
+      //await tf.ready();
   
-      // Check if there are enough data points for training
-      console.log(distanceData)
-      if (distanceData.length < 3) {
-        console.warn('Not enough data for LSTM analysis');
-        //return [];
+      // Log date for debugging
+      console.log(date.toISOString().split('T')[0]);
+  
+      // Filter data for the selected date
+      const selectedDate = date.toISOString().split('T')[0];
+  const selectedDateData = data.filter((item) => item.Date === selectedDate);
+      console.log(selectedDateData)
+  const distanceData = selectedDateData.map((item) => item.Distance);
+  
+      // Check if there is data for the selected date
+      if (selectedDateData.length === 0) {
+        console.warn('No data available for the selected date');
+        return [];
       }
+    if (data.length === 0) {
+      console.warn('No data available for LSTM analysis');
+      return [];
+    }
   
-      // Convert data to tensors
-      const inputTensor = tf.tensor2d(distanceData.slice(0, -1).map((value) => [value]));
-      const outputTensor = tf.tensor2d(distanceData.slice(1).map((value) => [value]));
+    // Filter data for the selected date
+    //const selectedDateData = data.filter((item) => item.Date === date.toISOString().split('T')[0]);
+  
+    // Ensure there is data available for the selected date
+   
+  
+    // Extract distance data for the LSTM analysis
+   // const distanceData = selectedDateData.map((item) => item.Distance);
+  
+    // Check if there are enough data points for training
+    if (distanceData.length < 3) {
+      console.warn('Not enough data for LSTM analysis');
+      return [];
+    }
+  
+
+     console.log(".");
+      // Prepare training data
+      const inputSequence = distanceData.slice(0, -1); // Input sequence (remove last element)
+      const outputSequence = distanceData.slice(1); // Output sequence (remove first element)
+      console.log(".");
+      console.log(inputSequence)
+      console.log(outputSequence)
+      const inputTensor = tf.tensor(inputSequence);
+      const outputTensor = tf.tensor(outputSequence);
+  
+      console.log(".")
+      // Reshape input tensor to 3D (batch size, time steps, input dimension)
+      const inputShape = [1, inputSequence.length, 1];
+      const reshapedInput = inputTensor.reshape(inputShape);
   
       // Create and train a simple LSTM model
       const model = tf.sequential();
-      model.add(tf.layers.lstm({ units: 50, inputShape: [1, 1], returnSequences: true }));
+      model.add(tf.layers.lstm({ units: 50, inputShape: [inputShape[1], inputShape[2]], returnSequences: true }));
       model.add(tf.layers.dense({ units: 1 }));
   
       model.compile({ loss: 'meanSquaredError', optimizer: 'adam' });
   
-      await model.fit(inputTensor, outputTensor, { epochs: 50 });
+      await model.fit(reshapedInput, outputTensor, { epochs: 50 });
   
       // Predict future values
-      const futureData = distanceData.slice(-1);
-      const predictions = [];
-  
-      for (let i = 0; i < 10; i++) {
-        const nextPrediction = model.predict(tf.tensor3d([futureData.slice(-1)]));
-        predictions.push(nextPrediction.dataSync()[0]);
-        futureData.push(nextPrediction.dataSync()[0]);
-        futureData.shift();
-      }
+      const lastInput = tf.tensor2d([[distanceData[distanceData.length - 1]]]);
+      const predictions = model.predict(lastInput).dataSync();
   
       // Invert scaling and return the forecasted values
       const maxDistance = Math.max(...distanceData);
       const forecastedValues = predictions.map((value, i) => ({
-        time: Date.now() + i * 3600 * 1000,
+        time: Date.now() + (i + 1) * 3600 * 1000,
         value: maxDistance - value,
       }));
   
@@ -141,6 +175,10 @@ const Forecasting = () => {
       return [];
     }
   };
+  
+  
+  
+  
   
 
   return (

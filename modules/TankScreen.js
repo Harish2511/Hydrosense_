@@ -57,13 +57,13 @@ const TankScreen = () => {
   // Define an array of image paths based on water levels
   const waterLevelImages = [
     require('./images/Lvl0.png'),
-    require('./images/Lvl1.png'),
-    require('./images/Lvl2.png'),
-    require('./images/Lvl3.png'),
-    require('./images/Lvl4.png'),
-    require('./images/Lvl5.png'),
-    require('./images/Lvl6.png'),
-    require('./images/Lvl7.png'),
+    require('./images/lvl1.png'),
+    require('./images/lvl2.png'),
+    require('./images/lvl3.png'),
+    require('./images/lvl4.png'),
+    require('./images/lvl5.png'),
+    require('./images/lvl6.png'),
+    require('./images/lvl7.png'),
   ];
 
   // Determine the appropriate image based on the water level
