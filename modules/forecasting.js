@@ -5,50 +5,38 @@ import {
   TouchableOpacity,
   StatusBar,
   StyleSheet,
-  Dimensions,
   ScrollView,
   RefreshControl,
-  Modal,
-  TextInput,
   ActivityIndicator,
 } from 'react-native';
-import { LineChart } from 'react-native-chart-kit';
 import { fetchData } from '../AwsFunctions';
-import { useNavigation } from '@react-navigation/native';
 import DateSelector from './DateSelector';
-import moment from 'moment';
-import * as tf from '@tensorflow/tfjs';
+import { VictoryLine, VictoryChart, VictoryTheme, VictoryLegend,VictoryAxis } from 'victory-native';
+import Arima from './Arima';
 
-const tankHeight = 300;
 
 const Forecasting = () => {
   const [tableData, setTableData] = useState([]);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [forecastResult, setForecastResult] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date());
-  const [showCalendar, setShowCalendar] = useState(false);
-  const [inputTime, setInputTime] = useState('');
-  const [expectedWaterLevel, setExpectedWaterLevel] = useState(null);
-  const [dailyAnalysis, setDailyAnalysis] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const navigation = useNavigation();
-
-  const toggleCalendarModal = () => {
-    setShowCalendar(!showCalendar);
-  };
-
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const tankHeight = 300;
   const fetchDataFromDynamoDb = async () => {
     try {
       setIsRefreshing(true);
       const data = await fetchData('SensorTableData');
-     // console.log('Raw DynamoDB Response:', data);
+      console.log('Raw DynamoDB Response:', data);
 
       if (data.length > 0) {
         const filteredData = data.filter((item) => item.Distance !== 0);
-      //  console.log(filteredData)
         setTableData(filteredData);
-        // Perform time series analysis on the selected date using LSTM
-        const lstmResult = await performLSTM(filteredData, selectedDate);
-        setDailyAnalysis(lstmResult);
+
+        // Perform ARIMA forecast on the selected date
+        const arimaModel = new Arima(filteredData.map((item) => tankHeight-item.Distance));
+        const arimaResult = arimaModel.predict(10); // Adjust the number of predictions as needed
+        setForecastResult(arimaResult);
       }
     } catch (error) {
       console.error('Error fetching data:', error);
@@ -58,128 +46,14 @@ const Forecasting = () => {
     }
   };
 
-  const onDateChange = async (newDate) => {
-    setSelectedDate(newDate);
-    // Perform time series analysis for the selected date using LSTM
-    const lstmResult = await performLSTM(tableData, newDate);
-    setDailyAnalysis(lstmResult);
+  
+  const toggleDatePicker = () => {
+    setShowDatePicker(!showDatePicker);
   };
 
-  const onInputTimeChange = (time) => {
-    setInputTime(time);
-    setExpectedWaterLevel(null);
-  };
-
-  const calculateExpectedWaterLevel = async () => {
-    if (inputTime === '') {
-      alert('Please enter a valid time slot');
-      return;
-    }
-
-    const time = parseFloat(inputTime);
-    if (isNaN(time) || time < 0 || time > 24) {
-      alert('Please enter a valid time between 0 and 24');
-      return;
-    }
-
-    // Perform time series analysis for the selected date using LSTM
-    const lstmResult = await performLSTM(tableData, selectedDate);
-    const selectedTimeData = lstmResult.find((item) => item.time === time);
-
-    if (selectedTimeData) {
-      setExpectedWaterLevel(selectedTimeData.value);
-    } else {
-      alert('No data available for the selected time slot');
-    }
-  };
-
-  const performLSTM = async (data, date) => {
-    // Ensure there is data available for analysis
-    try {
-      // Check if TensorFlow.js is ready
-      //await tf.ready();
-  
-      // Log date for debugging
-      console.log(date.toISOString().split('T')[0]);
-  
-      // Filter data for the selected date
-      const selectedDate = date.toISOString().split('T')[0];
-  const selectedDateData = data.filter((item) => item.Date === selectedDate);
-      console.log(selectedDateData)
-  const distanceData = selectedDateData.map((item) => item.Distance);
-  
-      // Check if there is data for the selected date
-      if (selectedDateData.length === 0) {
-        console.warn('No data available for the selected date');
-        return [];
-      }
-    if (data.length === 0) {
-      console.warn('No data available for LSTM analysis');
-      return [];
-    }
-  
-    // Filter data for the selected date
-    //const selectedDateData = data.filter((item) => item.Date === date.toISOString().split('T')[0]);
-  
-    // Ensure there is data available for the selected date
-   
-  
-    // Extract distance data for the LSTM analysis
-   // const distanceData = selectedDateData.map((item) => item.Distance);
-  
-    // Check if there are enough data points for training
-    if (distanceData.length < 3) {
-      console.warn('Not enough data for LSTM analysis');
-      return [];
-    }
-  
-
-     console.log(".");
-      // Prepare training data
-      const inputSequence = distanceData.slice(0, -1); // Input sequence (remove last element)
-      const outputSequence = distanceData.slice(1); // Output sequence (remove first element)
-      console.log(".");
-      console.log(inputSequence)
-      console.log(outputSequence)
-      const inputTensor = tf.tensor(inputSequence);
-      const outputTensor = tf.tensor(outputSequence);
-  
-      console.log(".")
-      // Reshape input tensor to 3D (batch size, time steps, input dimension)
-      const inputShape = [1, inputSequence.length, 1];
-      const reshapedInput = inputTensor.reshape(inputShape);
-  
-      // Create and train a simple LSTM model
-      const model = tf.sequential();
-      model.add(tf.layers.lstm({ units: 50, inputShape: [inputShape[1], inputShape[2]], returnSequences: true }));
-      model.add(tf.layers.dense({ units: 1 }));
-  
-      model.compile({ loss: 'meanSquaredError', optimizer: 'adam' });
-  
-      await model.fit(reshapedInput, outputTensor, { epochs: 50 });
-  
-      // Predict future values
-      const lastInput = tf.tensor2d([[distanceData[distanceData.length - 1]]]);
-      const predictions = model.predict(lastInput).dataSync();
-  
-      // Invert scaling and return the forecasted values
-      const maxDistance = Math.max(...distanceData);
-      const forecastedValues = predictions.map((value, i) => ({
-        time: Date.now() + (i + 1) * 3600 * 1000,
-        value: maxDistance - value,
-      }));
-  
-      return forecastedValues;
-    } catch (error) {
-      console.error('Error in performLSTM:', error);
-      return [];
-    }
-  };
-  
-  
-  
-  
-  
+  useEffect(() => {
+    fetchDataFromDynamoDb();
+  }, [selectedDate, showDatePicker]);
 
   return (
     <ScrollView
@@ -192,90 +66,59 @@ const Forecasting = () => {
         <Text style={styles.buttonText}>Refresh Data</Text>
       </TouchableOpacity>
 
-      {/* Date Selector */}
-      <TouchableOpacity onPress={toggleCalendarModal} style={styles.datePickerButton}>
-        <Text style={styles.datePickerButtonText}>Select a Date to View Water Level</Text>
+      {/* Date Picker */}
+      <TouchableOpacity onPress={toggleDatePicker} style={styles.button}>
+        <Text style={styles.buttonText}>Select Date</Text>
       </TouchableOpacity>
-      <Modal
-        animationType="slide"
-        transparent={true}
-        visible={showCalendar}
-        onRequestClose={toggleCalendarModal}
-      >
-        <View style={styles.modalContainer}>
-          <DateSelector onDateChange={onDateChange} />
-          <TouchableOpacity onPress={toggleCalendarModal} style={styles.modalCloseButton}>
-            <Text style={styles.modalCloseButtonText}>Close Calendar</Text>
-          </TouchableOpacity>
-        </View>
-      </Modal>
 
-      <View style={styles.insightsContainer}>
-        <Text style={styles.insightsText}>
-          Motor State: {tableData.length > 0 ? tableData[0]?.motorstate || 'N/A' : 'N/A'}
-        </Text>
-        <Text style={styles.insightsText}>
-          Category: {tableData.length > 0 ? tableData[0]?.Category || 'N/A' : 'N/A'}
-        </Text>
-      </View>
-
-      <View>
-        {/* Line Chart for Actual and Predicted Data */}
-        {isLoading ? (
-          <ActivityIndicator size="large" color="#8B4513" />
-        ) : (
-          tableData.length > 0 &&
-          dailyAnalysis.length > 0 && (
-            <View style={styles.chartContainer}>
-              <Text style={styles.subSectionHeader}>Actual vs Predicted Usage:</Text>
-              <LineChart
-                data={{
-                  labels: tableData.map((item) => moment(item.Time).format('LT')),
-                  datasets: [
-                    {
-                      data: tableData.map((item) => tankHeight - item.Distance),
-                      color: (opacity = 1) => `rgba(139, 69, 19, ${opacity})`, // Actual usage color
-                    },
-                    {
-                      data: dailyAnalysis.map((item) => item.value),
-                      color: (opacity = 1) => `rgba(255, 99, 71, ${opacity})`, // Predicted usage color
-                    },
-                  ],
-                }}
-                width={Dimensions.get('window').width - 16}
-                height={220}
-                chartConfig={{
-                  backgroundGradientFrom: '#FFFFFF',
-                  backgroundGradientTo: '#FFFFFF',
-                  color: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
-                  labelColor: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
-                }}
-              />
-            </View>
-          )
-        )}
-      </View>
-
-      {/* Input for Expected Water Level */}
-      <View style={styles.inputContainer}>
-        <TextInput
-          style={styles.input}
-          placeholder="Enter Time (0-24)"
-          keyboardType="numeric"
-          value={inputTime}
-          onChangeText={onInputTimeChange}
+      {/* Show DateSelector when showDatePicker is true */}
+      {showDatePicker && (
+        <DateSelector
+          onDateChange={(date) => {
+            setSelectedDate(date);
+            toggleDatePicker(); // Close DateSelector after selecting a date
+          }}
         />
-        <TouchableOpacity onPress={calculateExpectedWaterLevel} style={styles.button}>
-          <Text style={styles.buttonText}>Calculate Expected Water Level</Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* Display Expected Water Level */}
-      {expectedWaterLevel !== null && (
-        <View style={styles.insightsContainer}>
-          <Text style={styles.insightsText}>Expected Water Level: {expectedWaterLevel.toFixed(2)} cm</Text>
-        </View>
       )}
+
+      {/* Display ARIMA Forecast Result */}
+      {forecastResult !== null && (
+  <View>
+    <View style={styles.chartContainer}>
+      <VictoryChart theme={VictoryTheme.grayscale} >
+        {/* Displaying the last 15 records */}
+        <VictoryLine
+          data={tableData.slice(-10).map((item, index) => ({ x: item.Time, y: tankHeight - item.Distance }))}
+          style={{
+            data: { stroke: 'blue' },
+          }}
+        />
+        {/* Displaying the predicted data for the next 10 steps */}
+        <VictoryLine
+          data={forecastResult.map((value, index) => ({ x: tableData[tableData.length - 1].Time + (index + 1), y: value }))}
+          style={{
+            data: { stroke: 'red' },
+          }}
+        />
+        <VictoryAxis label="Time" style={{ tickLabels: { fontSize: 3 } }} />
+        <VictoryAxis dependentAxis label="Water Level" style={{ tickLabels: { fontSize: 8, padding: 5 } }} />
+      </VictoryChart>
+    </View>
+    <View style={styles.legendContainer}>
+      <VictoryLegend
+        orientation="horizontal"
+        gutter={20}
+        style={{ border: { stroke: 'black' }, title: { fontSize: 10 } }}
+        colorScale={['blue', 'red']}
+        data={[
+          { name: 'Actual Data' },
+          { name: 'Predicted Data' },
+        ]}
+      />
+    </View>
+  </View>
+)}
+
 
       <StatusBar style="auto" />
     </ScrollView>
@@ -296,71 +139,25 @@ const styles = StyleSheet.create({
     color: 'white',
     fontWeight: 'bold',
   },
-  datePickerButton: {
-    backgroundColor: '#8B4513',
-    padding: 10,
-    margin: 10,
-    borderRadius: 5,
-  },
-  datePickerButtonText: {
-    color: 'white',
-    fontWeight: 'bold',
-    textAlign: 'center',
-  },
-  modalContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-  },
-  modalCloseButton: {
-    backgroundColor: '#8B4513',
-    padding: 10,
-    margin: 10,
-    borderRadius: 5,
-  },
-  modalCloseButtonText: {
-    color: 'white',
-    fontWeight: 'bold',
-    textAlign: 'center',
-  },
-  insightsContainer: {
-    backgroundColor: '#D2B48C',
-    padding: 10,
-    margin: 10,
-    borderRadius: 5,
-  },
-  insightsText: {
-    fontWeight: 'bold',
-    fontSize: 16,
-    marginBottom: 5,
-  },
-  sectionHeader: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginTop: 20,
-    marginBottom: 10,
-    color: '#8B4513',
-  },
-  subSectionHeader: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginBottom: 10,
-    color: '#8B4513',
+  datePicker: {
+    width: 200,
+    marginVertical: 10,
   },
   chartContainer: {
     marginBottom: 20,
   },
-  inputContainer: {
-    marginVertical: 10,
+  legendContainer: {
+    alignItems: 'center',
   },
-  input: {
-    height: 40,
-    borderColor: 'gray',
-    borderWidth: 1,
-    borderRadius: 5,
+  button: {
+    backgroundColor: '#8B4513',
     padding: 10,
-    marginBottom: 10,
+    margin: 10,
+    borderRadius: 5,
+  },
+  buttonText: {
+    color: 'white',
+    fontWeight: 'bold',
   },
 });
 

@@ -1,28 +1,35 @@
-// Arima.js
+import math from 'mathjs';
 
-import ARIMA from 'arima';
+class ARIMA {
+  constructor(data) {
+    this.data = data;
+    this.order = [1, 1, 1]; // You can adjust the order as needed
+    this.differencedData = this.difference(this.data);
+  }
 
-export const forecastArima = (data, selectedDate) => {
-  // Extract relevant data for the selected date
-  const selectedDateData = data.filter(
-    (item) => item.Date === selectedDate.toISOString().split('T')[0]
-  );
+  difference(data) {
+    // Manually calculate the difference
+    return data.slice(1).map((value, index) => value - data[index]);
+  }
 
-  // Perform ARIMA-based time series analysis
-  // For demonstration purposes, let's use a basic ARIMA model
-  const arimaData = selectedDateData.map((item, index) => ({
-    time: item.Time,
-    value: tankHeight - item.Distance, // Adjusted for tank height
-  }));
+  fit() {
+    // Placeholder for training ARIMA model
+    // For simplicity, we'll skip parameter tuning and training steps
+  }
 
-  const arimaModel = new ARIMA(arimaData.map((item) => item.value));
-  const forecast = arimaModel.predictNext();
+  predict(steps) {
+    // Placeholder for ARIMA prediction
+    const forecast = [];
+    let forecastValue = this.data[this.data.length - 1];
 
-  // Map the forecast results back to the original time slots
-  const arimaForecast = arimaData.map((item, index) => ({
-    time: item.time,
-    forecast: index < arimaData.length - 1 ? forecast[index] : null,
-  }));
+    for (let i = 0; i < steps; i++) {
+      // Basic ARIMA forecasting: extrapolate based on the last observed difference
+      forecastValue += this.differencedData[this.differencedData.length - 1];
+      forecast.push(forecastValue);
+    }
 
-  return arimaForecast;
-};
+    return forecast;
+  }
+}
+
+export default ARIMA;

@@ -48,7 +48,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-start',
   },
   heading: {
-    fontFamily: 'Raleway',
+    
     fontWeight: '700',
     lineHeight: 28,
     // Add styles for the heading text here

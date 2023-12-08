@@ -53,7 +53,6 @@ const Styles = StyleSheet.create({
     color: "var(--dl-color-gray-white)",
     maxWidth: "800px",
     textAlign: "center",
-    fontFamily: '"Raleway"',
     lineHeight: 1.6
   },
   "home-heroSubHeading": {

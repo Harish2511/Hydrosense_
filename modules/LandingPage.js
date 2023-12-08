@@ -13,27 +13,27 @@ import FeatureCard from './FeatureCard';
 import GalleryCard3 from './GalleryCard3Page';
 import Question from './QuestionPage';
 import { useNavigation } from '@react-navigation/native';
-const scrollToFeaturesSection = () => {
-  if (featuresSectionRef.current) {
-    featuresSectionRef.current.measureLayout(
-      findNodeHandle(null),
-      (x, y, width, height) => {
-        scrollViewRef.current.scrollTo({ y, animated: true });
-      }
-    );
-  }
-};
+
 const LandingPage = () => {
   const navigation = useNavigation();
   
   const scrollY = useRef(new Animated.Value(0)).current;
-  const featuresSectionRef = useRef(null);
+  //const featuresSectionRef = useRef(null);
   const headerOpacity = scrollY.interpolate({
     inputRange: [0, 100],
     outputRange: [1, 0],
     extrapolate: 'clamp',
   });
+  const scrollViewRef = useRef(null); // Add this line to create a reference to the ScrollView
+  const featuresSectionRef = useRef(null); // Add this line to create a reference to the features section
 
+  const scrollToFeaturesSection = () => {
+    if (featuresSectionRef.current && scrollViewRef.current) {
+      featuresSectionRef.current.measure((x, y, width, height) => {
+        scrollViewRef.current.scrollTo({ y, animated: true });
+      });
+    }
+  };
   const imageScale = scrollY.interpolate({
     inputRange: [-100, 0, 100],
     outputRange: [2, 1, 1],
@@ -54,11 +54,12 @@ const LandingPage = () => {
   );
   return (
     <ScrollView
-      style={styles.container}
-      onScroll={Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], {
-        useNativeDriver: false,
-      })}
-      scrollEventThrottle={16}
+    style={styles.container}
+    ref={scrollViewRef} // Set the reference for ScrollView
+    onScroll={Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], {
+      useNativeDriver: false,
+    })}
+    scrollEventThrottle={16}
     >
       <Animated.View style={[styles.hero, { opacity: headerOpacity }]}>
         <Text style={styles.heroHeading}>Hydrosense</Text>
@@ -72,12 +73,15 @@ const LandingPage = () => {
         >
           <Text style={styles.buttonText}>Get Started</Text>
         </TouchableOpacity>
-        <TouchableOpacity
-            style={styles.heroButton}
-            onPress={() => scrollToFeaturesSection()}
-          >
-            <Text style={styles.buttonText}>Learn More →</Text>
-          </TouchableOpacity>
+        <View ref={featuresSectionRef} style={styles.features}>
+        {/* Features section content */}
+        
+      </View>
+
+      {/* Learn More button */}
+      <TouchableOpacity onPress={scrollToFeaturesSection} style={styles.heroButton}>
+        <Text style={styles.buttonText}>Learn More →</Text>
+      </TouchableOpacity>
         </View>
       </Animated.View>
 
@@ -151,7 +155,7 @@ const LandingPage = () => {
             {
               id: '4',
               imageSrc:
-                'https://ezztank.com/images/EZZTANK-BRAND-LOGO.png',
+                'https://ezztank.com/images/MULTIPLE-WATER-TANKS-ONE-MONITOR.jpg',
             },
             // Add more images
           ]}
@@ -229,7 +233,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#4CAF50',
     padding: 15,
     borderRadius: 8,
-    margin: 10,
+    margin: 0,
     width: 150,
     alignItems: 'center',
   },
