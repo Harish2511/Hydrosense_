@@ -1,11 +1,12 @@
-import React from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ImageBackground } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import React, { useState } from 'react';
+import { TextInput, View, Text, Image, TouchableOpacity, StyleSheet, SafeAreaView, Switch } from 'react-native';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 const LoginScreen = ({ onLogin }) => {
-  const navigation = useNavigation();
-  const [username, setUsername] = React.useState('');
-  const [password, setPassword] = React.useState('');
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
 
   const handleLogin = () => {
     // Add your authentication logic here
@@ -14,83 +15,118 @@ const LoginScreen = ({ onLogin }) => {
     onLogin();
   };
 
+  const toggleShowPassword = () => {
+    setShowPassword(!showPassword);
+  };
+
+  const toggleRememberMe = () => {
+    setRememberMe(!rememberMe);
+  };
+
   return (
-    <ImageBackground
-      source={require('./images/water.png')}
-      style={styles.backgroundImage}
-    >
-      <View style={styles.container}>
-        <Text style={styles.logo}>Hydrosense</Text>
+    <SafeAreaView style={styles.container}>
+      <Image source={require('../assets/Logo.png')} style={styles.logoImage} />
 
-        <View style={styles.inputView}>
-          <TextInput
-            style={styles.inputText}
-            placeholder="Username"
-            placeholderTextColor="#003f5c"
-            onChangeText={setUsername}
-          />
-        </View>
-
-        <View style={styles.inputView}>
-          <TextInput
-            secureTextEntry
-            style={styles.inputText}
-            placeholder="Password"
-            placeholderTextColor="#003f5c"
-            onChangeText={setPassword}
-          />
-        </View>
-
-        <TouchableOpacity style={styles.loginBtn} onPress={handleLogin}>
-          <Text style={styles.loginText}>LOGIN</Text>
-        </TouchableOpacity>
+      <View style={styles.inputView}>
+        <TextInput
+          style={styles.inputText}
+          placeholder="Username"
+          placeholderTextColor="#003f5c"
+          onChangeText={setUsername}
+        />
+        <MaterialCommunityIcons name="account" size={24} color="#aaa" style={styles.icon} />
       </View>
-    </ImageBackground>
+
+      <View style={styles.inputView}>
+        <TextInput
+          style={styles.inputText}
+          placeholder="Password"
+          placeholderTextColor="#003f5c"
+          secureTextEntry={!showPassword}
+          onChangeText={setPassword}
+        />
+        <MaterialCommunityIcons
+          name={showPassword ? 'eye-off' : 'eye'}
+          size={24}
+          color="#aaa"
+          style={styles.icon}
+          onPress={toggleShowPassword}
+        />
+      </View>
+
+      <View style={styles.toggleView}>
+        <View style={styles.toggleItem}>
+          <Text style={styles.toggleLabel}>Remember Me</Text>
+          <Switch value={rememberMe} onValueChange={toggleRememberMe} />
+        </View>
+      </View>
+
+      <TouchableOpacity style={styles.loginBtn} onPress={handleLogin}>
+        <Text style={styles.loginText}>LOGIN</Text>
+      </TouchableOpacity>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
-  backgroundImage: {
-    flex: 1,
-    resizeMode: 'cover',
-    justifyContent: 'center',
-  },
   container: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  logo: {
-    fontWeight: 'bold',
-    fontSize: 50,
-    color: '#fff',
-    marginBottom: 40,
+  logoImage: {
+    width: 100,
+    height: 100,
+    marginBottom: 30,
   },
   inputView: {
+    flexDirection: 'row',
+    alignItems: 'center',
     width: '80%',
-    backgroundColor: '#465881',
-    borderRadius: 25,
-    height: 50,
+    borderColor: '#465881',
+    borderWidth: 1,
+    borderRadius: 15,
     marginBottom: 20,
-    justifyContent: 'center',
-    padding: 20,
+    paddingVertical: 0,
+    justifyContent: 'space-between',
+  },
+  icon: {
+    marginLeft: 10,
+    marginRight: 15,
   },
   inputText: {
     height: 50,
-    color: 'white',
+    color: 'black',
+    flex: 1,
+    marginLeft: 10,
   },
   loginBtn: {
-    width: '80%',
-    backgroundColor: '#fb5b5a',
-    borderRadius: 25,
+    width: '40%',
+    backgroundColor: 'brown',
+    borderRadius: 15,
     height: 50,
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 40,
+    marginTop: 20,
     marginBottom: 10,
   },
   loginText: {
     color: 'white',
+  },
+  toggleView: {
+    flexDirection: 'column',
+    justifyContent: 'space-between',
+    width: '80%',
+    marginBottom: 10,
+  },
+  toggleItem: {
+    marginTop: 0,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  toggleLabel: {
+    color: 'black',
+    marginRight: 10,
   },
 });
 
