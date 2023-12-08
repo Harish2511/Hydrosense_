@@ -5,9 +5,9 @@ import { useNavigation } from '@react-navigation/native';
 const MotorState = () => {
   const [isOn, setIsOn] = useState(false);
   const [tableData, setTableData] = useState([
-    { tankType: 'OH T', waterLevel: '', motorStatus: '' },
-    { tankType: 'OH T', waterLevel: '', motorStatus: '' },
-    { tankType: 'UG S', waterLevel: '', motorStatus: '' },
+    { tankType: 'OH T', waterLevel: '78%', motorStatus: '' },
+    { tankType: 'OH T', waterLevel: '65%', motorStatus: '' },
+    { tankType: 'UG S', waterLevel: '89%', motorStatus: '' },
   ]);
 
   const navigation = useNavigation();
@@ -93,10 +93,15 @@ const MotorState = () => {
           ))}
         </View>
       </View>
+
+      {/* Tank Type Mapping */}
+      <View style={styles.tankTypeMapping}>
+        <Text style={styles.mappingText}>OH T => Overhead Tank</Text>
+        <Text style={styles.mappingText}>UG S => Underground Sump</Text>
+      </View>
     </View>
   );
 };
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -173,6 +178,14 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     textAlign: 'center',
     color: 'black',
+  },
+    tankTypeMapping: {
+    marginTop: 30,
+    alignItems: 'center',
+  },
+  mappingText: {
+    fontSize: 16,
+    marginBottom: 15,
   },
 });
 

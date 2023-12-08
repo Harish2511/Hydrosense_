@@ -89,7 +89,17 @@ const App = () => {
   };
 
   const CustomAppBar = ({ route }) => {
-    const title = route.params ? route.params.title : 'Tank Screen';
+    let title = route.params ? route.params.title : 'Options';
+
+    if (route.name === 'Analytics') {
+      title = 'Analytics';
+    }
+
+    if (route.name === 'Forecasting') {
+      title = 'Water Forecasting';
+    } else if (route.name === 'LoginScreen') {
+      title = 'Login';
+    }
 
     return (
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>

@@ -33,6 +33,7 @@ const Analytics = () => {
   const [category, setCategory] = useState('');
   const [showCalendar, setShowCalendar] = useState(false);
   const navigation = useNavigation();
+  
 
   const fetchDataFromDynamoDb = async () => {
     try {
