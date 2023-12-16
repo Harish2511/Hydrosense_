@@ -49,8 +49,9 @@ const LandingPage = () => {
   };
   const GalleryCard = ({ item }) => (
     <View style={styles.galleryCard}>
-      <Image source={{ uri: item.imageSrc }} style={styles.galleryImage} resizeMode="cover" />
+      <Image source={item.imageSrc} style={{ width: 250, height: 250 }} />
     </View>
+
   );
   return (
     <ScrollView
@@ -139,23 +140,19 @@ const LandingPage = () => {
           data={[
             {
               id: '1',
-              imageSrc:
-                'https://ezztank.com/images/WORKING-PROCESS-WATER-TIMER-CONTROLLER.png',
+              imageSrc: require('./images/homescreen4.jpg'),
             },
             {
               id: '2',
-              imageSrc:
-                'https://ezztank.com/images/Ezztank-mobile-screen.png',
+              imageSrc: require('./images/homescreen2.jpg'),
             },
             {
               id: '3',
-              imageSrc:
-                'https://ezztank.com/images/WORKING-PROCESS-WATER-TANK-INDICATOR.png',
+              imageSrc: require('./images/homescreen3.jpg'),
             },
             {
               id: '4',
-              imageSrc:
-                'https://ezztank.com/images/MULTIPLE-WATER-TANKS-ONE-MONITOR.jpg',
+              imageSrc: require('./images/homescreen1.jpg'),
             },
             // Add more images
           ]}
