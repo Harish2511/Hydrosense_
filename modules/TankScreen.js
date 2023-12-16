@@ -8,7 +8,7 @@ const TankScreen = () => {
   const [tankTitle, setTankTitle] = useState('Overhead Tank 1');
   const [isLeftButtonEnabled, setLeftButtonEnabled] = useState(false);
   const [isRightButtonEnabled, setRightButtonEnabled] = useState(true);
-  const [waterLevel, setWaterLevel] = useState(Math.floor(Math.random() * 101)); // Random water level
+  const [waterLevel, setWaterLevel] = useState(95); // Initial water level for Overhead Tank 1
   const tankCapacity = 1000; // Static tank capacity
 
   useEffect(() => {
@@ -18,7 +18,7 @@ const TankScreen = () => {
       headerRight: () => (
         <TouchableHighlight
           style={styles.refreshButton}
-          underlayColor="#d3d3d3" // Change the color when pressed
+          underlayColor="#d3d3d3"
           onPress={handleRefresh}
         >
           <MaterialCommunityIcons name="refresh" size={28} color="white" />
@@ -30,10 +30,12 @@ const TankScreen = () => {
   const handleLeftButtonPress = () => {
     if (tankTitle === 'Overhead Tank 2') {
       setTankTitle('Overhead Tank 1');
+      setWaterLevel(95);
       setLeftButtonEnabled(false);
       setRightButtonEnabled(true);
     } else if (tankTitle === 'Underground Sump') {
       setTankTitle('Overhead Tank 2');
+      setWaterLevel(90);
       setRightButtonEnabled(true);
     }
   };
@@ -41,9 +43,11 @@ const TankScreen = () => {
   const handleRightButtonPress = () => {
     if (tankTitle === 'Overhead Tank 1') {
       setTankTitle('Overhead Tank 2');
+      setWaterLevel(90);
       setLeftButtonEnabled(true);
     } else if (tankTitle === 'Overhead Tank 2') {
       setTankTitle('Underground Sump');
+      setWaterLevel(53);
       setRightButtonEnabled(false);
     }
   };
@@ -51,7 +55,7 @@ const TankScreen = () => {
   const handleRefresh = () => {
     // Refresh logic, if needed
     // For now, let's just update the water level with a random value
-    setWaterLevel(Math.floor(Math.random() * 101));
+    setWaterLevel(Math.max(Math.floor(Math.random() * 101), 0));
   };
 
   // Define an array of image paths based on water levels
@@ -81,6 +85,7 @@ const TankScreen = () => {
   const handleMotorSettingsPress = () => {
     // Navigate to "MotorState.js" page
     navigation.navigate('MotorState'); // Make sure you have 'MotorState' as the name of the corresponding screen in your navigator
+    
   };
 
   return (
@@ -117,7 +122,7 @@ const TankScreen = () => {
         </View>
 
         <View style={styles.infoContainer}>
-          <Text style={styles.infoText}>{`Water Level: ${waterLevel}%`}</Text>
+          <Text style={styles.infoText}>{`Water Level: ${waterLevel}% (${((waterLevel / 100) * 300).toFixed(1)} cm)`}</Text>
           <Text style={styles.infoText}>{`Tank Capacity: ${tankCapacity} Liters`}</Text>
         </View>
       </View>

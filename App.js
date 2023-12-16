@@ -45,7 +45,7 @@ const App = () => {
   }, []); // Empty dependency array means this effect runs once after the initial render
 
   const CustomDrawerContent = (props) => {
-    const [selectedRoute, setSelectedRoute] = useState('MotorState');
+    const [selectedRoute, setSelectedRoute] = useState('TankScreen');
   
     const handleRoutePress = (routeName) => {
       setSelectedRoute(routeName);
@@ -61,26 +61,31 @@ const App = () => {
         <View style={{ backgroundColor: 'brown', padding: 16, marginBottom: 16 }}>
           <Text style={{ fontSize: 20, fontWeight: 'bold', color: 'white' }}>Options</Text>
         </View>
-        <DrawerItem
-          label="Motor State"
-          onPress={() => handleRoutePress('MotorState')}
-          labelStyle={getLabelStyle('MotorState')}
-        />
-        <DrawerItem
-          label="Analytics"
-          onPress={() => handleRoutePress('Analytics')}
-          labelStyle={getLabelStyle('Analytics')}
-        />
-        <DrawerItem
-          label="Water Level"
-          onPress={() => handleRoutePress('Waterlevel')}
-          labelStyle={getLabelStyle('Waterlevel')}
-        />
+
         <DrawerItem
           label="Tank Screen"
           onPress={() => handleRoutePress('TankScreen')}
           labelStyle={getLabelStyle('TankScreen')}
         />
+
+        <DrawerItem
+          label="Motor State"
+          onPress={() => handleRoutePress('MotorState')}
+          labelStyle={getLabelStyle('MotorState')}
+        />
+
+        <DrawerItem
+          label="Water Level"
+          onPress={() => handleRoutePress('Waterlevel')}
+          labelStyle={getLabelStyle('Waterlevel')}
+        />
+
+        <DrawerItem
+          label="Analytics"
+          onPress={() => handleRoutePress('Analytics')}
+          labelStyle={getLabelStyle('Analytics')}
+        />
+        
         <DrawerItem
           label="Water Forecasting"
           onPress={() => handleRoutePress('Forecasting')}
@@ -134,7 +139,7 @@ const App = () => {
       {fontLoaded && ( // Wait for the font to be loaded
         loggedIn ? (
           <Drawer.Navigator
-            initialRouteName="MotorState"
+            initialRouteName="TankScreen"
             drawerContent={(props) => <CustomDrawerContent {...props} />}
           >
             <Drawer.Screen

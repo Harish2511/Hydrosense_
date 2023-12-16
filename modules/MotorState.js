@@ -6,27 +6,12 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 const MotorState = () => {
   const [isOn, setIsOn] = useState(false);
   const [tableData, setTableData] = useState([
-    { tankType: 'OH T', waterLevel: '78%', motorStatus: '' },
-    { tankType: 'OH T', waterLevel: '65%', motorStatus: '' },
-    { tankType: 'UG S', waterLevel: '89%', motorStatus: '' },
+    { tankType: 'OHT 1', waterLevel: '95%', motorStatus: 'OFF' },
+    { tankType: 'OHT 2', waterLevel: '90%', motorStatus: 'OFF' },
+    { tankType: 'UGS', waterLevel: '53%', motorStatus: 'ON' },
   ]);
 
   const navigation = useNavigation();
-
-  const handleRefresh = () => {
-    const newData = [
-      { tankType: 'OH T', waterLevel: '80%', motorStatus: 'OFF' },
-      { tankType: 'OH T', waterLevel: '75%', motorStatus: 'OFF' },
-      { tankType: 'UG S', waterLevel: '92%', motorStatus: 'ON' },
-    ];
-
-    const isDataChanged = JSON.stringify(newData) !== JSON.stringify(tableData);
-
-    if (isDataChanged) {
-      setTableData(newData);
-      setIsOn(false);
-    }
-  };
 
   useEffect(() => {
     navigation.setOptions({
@@ -48,6 +33,21 @@ const MotorState = () => {
     });
   }, [navigation, tableData]);
 
+  const handleRefresh = () => {
+    const newData = [
+      { tankType: 'OHT 1', waterLevel: '92%', motorStatus: 'OFF' },
+      { tankType: 'OHT 2', waterLevel: '90%', motorStatus: 'OFF' },
+      { tankType: 'UGS', waterLevel: '53%', motorStatus: 'ON' },
+    ];
+
+    const isDataChanged = JSON.stringify(newData) !== JSON.stringify(tableData);
+
+    if (isDataChanged) {
+      setTableData(newData);
+      setIsOn(false);
+    }
+  };
+
   const handleOffButtonPress = () => {
     setIsOn(false);
   };
@@ -64,7 +64,6 @@ const MotorState = () => {
       return prevTableData.map(row => ({ ...row, motorStatus }));
     });
   };
-  
 
   return (
     <View style={styles.container}>
@@ -109,7 +108,7 @@ const MotorState = () => {
             <View key={index} style={styles.tableRow}>
               <Text style={styles.tableCell}>{row.tankType}</Text>
               <Text style={styles.tableCell}>{row.waterLevel}</Text>
-              {row.tankType === 'UG S' ? (
+              {row.tankType === 'UGS' ? (
                 <Text style={styles.tableCellSubtitle}>-</Text>
               ) : (
                 <Text style={styles.tableCell}>{row.motorStatus}</Text>
@@ -120,8 +119,8 @@ const MotorState = () => {
       </View>
 
       <View style={styles.tankTypeMapping}>
-        <Text style={styles.mappingText}>OH T => Overhead Tank</Text>
-        <Text style={styles.mappingText}>UG S => Underground Sump</Text>
+        <Text style={styles.mappingText}>OHT => Overhead Tank</Text>
+        <Text style={styles.mappingText}>UGS => Underground Sump</Text>
       </View>
     </View>
   );
