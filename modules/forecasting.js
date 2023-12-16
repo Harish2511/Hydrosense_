@@ -7,15 +7,15 @@ import {
   StyleSheet,
   ScrollView,
   RefreshControl,
-  ActivityIndicator,
+  TouchableHighlight,
 } from 'react-native';
 import { fetchData } from '../AwsFunctions';
 import DateSelector from './DateSelector';
-import { VictoryLine, VictoryChart, VictoryTheme, VictoryLegend,VictoryAxis } from 'victory-native';
+import { VictoryLine, VictoryChart, VictoryTheme, VictoryLegend, VictoryAxis } from 'victory-native';
 import Arima from './Arima';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 
-
-const Forecasting = () => {
+const Forecasting = ({ navigation }) => {
   const [tableData, setTableData] = useState([]);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [forecastResult, setForecastResult] = useState(null);
@@ -23,6 +23,7 @@ const Forecasting = () => {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
   const tankHeight = 300;
+
   const fetchDataFromDynamoDb = async () => {
     try {
       setIsRefreshing(true);
@@ -34,7 +35,7 @@ const Forecasting = () => {
         setTableData(filteredData);
 
         // Perform ARIMA forecast on the selected date
-        const arimaModel = new Arima(filteredData.map((item) => tankHeight-item.Distance));
+        const arimaModel = new Arima(filteredData.map((item) => tankHeight - item.Distance));
         const arimaResult = arimaModel.predict(10); // Adjust the number of predictions as needed
         setForecastResult(arimaResult);
       }
@@ -46,28 +47,42 @@ const Forecasting = () => {
     }
   };
 
-  
   const toggleDatePicker = () => {
     setShowDatePicker(!showDatePicker);
   };
 
-  useEffect(() => {
+  const handleRefresh = () => {
     fetchDataFromDynamoDb();
-  }, [selectedDate, showDatePicker]);
+  };
+
+  useEffect(() => {
+    fetchDataFromDynamoDb(); // Fetch data initially
+
+    // Set up navigation options
+    navigation.setOptions({
+      headerTitle: null,
+      headerRight: () => (
+        <TouchableHighlight
+          style={styles.refreshButton}
+          underlayColor="#d3d3d3"
+          onPress={handleRefresh}
+        >
+          <MaterialCommunityIcons name="refresh" size={28} color="white" />
+        </TouchableHighlight>
+      ),
+    });
+  }, [navigation, selectedDate, showDatePicker]);
 
   return (
     <ScrollView
       contentContainerStyle={styles.container}
       refreshControl={
-        <RefreshControl refreshing={isRefreshing} onRefresh={fetchDataFromDynamoDb} colors={['#8B4513']} />
+        <RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} colors={['#8B4513']} />
       }
     >
-      <TouchableOpacity onPress={fetchDataFromDynamoDb} style={styles.button}>
-        <Text style={styles.buttonText}>Refresh Data</Text>
-      </TouchableOpacity>
 
       {/* Date Picker */}
-      <TouchableOpacity onPress={toggleDatePicker} style={styles.button}>
+      <TouchableOpacity onPress={toggleDatePicker} style={[styles.button, { width: 150, alignSelf: 'center' }]}>
         <Text style={styles.buttonText}>Select Date</Text>
       </TouchableOpacity>
 
@@ -83,42 +98,63 @@ const Forecasting = () => {
 
       {/* Display ARIMA Forecast Result */}
       {forecastResult !== null && (
-  <View>
-    <View style={styles.chartContainer}>
-      <VictoryChart theme={VictoryTheme.grayscale} >
-        {/* Displaying the last 15 records */}
-        <VictoryLine
-          data={tableData.slice(-10).map((item, index) => ({ x: item.Time, y: tankHeight - item.Distance }))}
-          style={{
-            data: { stroke: 'blue' },
-          }}
-        />
-        {/* Displaying the predicted data for the next 10 steps */}
-        <VictoryLine
-          data={forecastResult.map((value, index) => ({ x: tableData[tableData.length - 1].Time + (index + 1), y: value }))}
-          style={{
-            data: { stroke: 'red' },
-          }}
-        />
-        <VictoryAxis label="Time" style={{ tickLabels: { fontSize: 3 } }} />
-        <VictoryAxis dependentAxis label="Water Level" style={{ tickLabels: { fontSize: 8, padding: 5 } }} />
+        <View>
+          <View style={styles.chartContainer}>
+          <VictoryChart theme={VictoryTheme.grayscale}>
+          {/* Displaying the last 15 records */}
+          <VictoryLine
+            data={tableData.slice(-10).map((item, index) => ({ x: item.Time, y: tankHeight - item.Distance }))}
+            style={{
+              data: { stroke: 'blue' },
+            }}
+          />
+          {/* Displaying the predicted data for the next 10 steps */}
+          <VictoryLine
+            data={forecastResult.map((value, index) => ({
+              x: tableData[tableData.length - 1].Time + (index + 1),
+              y: value,
+            }))}
+            style={{
+              data: { stroke: 'red' },
+            }}
+          />
+          <VictoryAxis
+            label="Time"
+            style={{
+              tickLabels: {
+                fontSize: 5,
+                angle: 45, // Rotate the tick labels diagonally in the opposite direction
+              },
+            }}
+          />
+          <VictoryAxis
+            dependentAxis
+            label="Water Level"
+            style={{
+              tickLabels: { fontSize: 8, padding: 5 },
+            }}
+          />
       </VictoryChart>
-    </View>
-    <View style={styles.legendContainer}>
-      <VictoryLegend
-        orientation="horizontal"
-        gutter={20}
-        style={{ border: { stroke: 'black' }, title: { fontSize: 10 } }}
-        colorScale={['blue', 'red']}
-        data={[
-          { name: 'Actual Data' },
-          { name: 'Predicted Data' },
-        ]}
-      />
-    </View>
-  </View>
-)}
-
+          </View>
+          <View style={styles.legendContainer}>
+            <VictoryLegend
+              orientation="horizontal"
+              gutter={20}
+              style={{ border: { stroke: 'black' }, title: { fontSize: 10 } }}
+              colorScale={['blue', 'red']}
+              data={[
+                { name: 'Actual Data' },
+                { name: 'Predicted Data' },
+              ]}
+            />
+          </View>
+          <View style={styles.additionalTextContainer}>
+            <Text style={styles.additionalText}>
+              This model provides a comprehensive view of water level data, presenting both historical records and ARIMA-based predictions. Enabling you to explore trends, refresh real-time data, and select specific dates to gain precise insights into tank levels, facilitating informed decision-making.
+            </Text>
+          </View>
+        </View>
+      )}
 
       <StatusBar style="auto" />
     </ScrollView>
@@ -130,7 +166,7 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   button: {
-    backgroundColor: '#8B4513',
+    backgroundColor: 'black',
     padding: 10,
     margin: 10,
     borderRadius: 5,
@@ -138,6 +174,7 @@ const styles = StyleSheet.create({
   buttonText: {
     color: 'white',
     fontWeight: 'bold',
+    textAlign: 'center'
   },
   datePicker: {
     width: 200,
@@ -148,17 +185,28 @@ const styles = StyleSheet.create({
   },
   legendContainer: {
     alignItems: 'center',
+    marginLeft: 120,
   },
-  button: {
-    backgroundColor: '#8B4513',
+  refreshButton: {
+    marginRight: 16,
+  },
+
+  additionalTextContainer: {
+    position: 'absolute',
+    backgroundColor: 'lightgrey',
+    borderRadius: 10,
     padding: 10,
-    margin: 10,
-    borderRadius: 5,
+    top: '50%',
+    left: 16,
+    right: 16,
+    marginTop: 70, // Adjust this value to fine-tune the vertical centering
   },
-  buttonText: {
-    color: 'white',
-    fontWeight: 'bold',
+  
+  additionalText: {
+    color: 'black',
+    textAlign: 'justify', // Add this line to set the text alignment to justify
   },
+  
 });
 
 export default Forecasting;

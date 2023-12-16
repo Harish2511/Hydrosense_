@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, TouchableHighlight, StyleSheet } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 const MotorState = () => {
   const [isOn, setIsOn] = useState(false);
@@ -12,17 +13,40 @@ const MotorState = () => {
 
   const navigation = useNavigation();
 
+  const handleRefresh = () => {
+    const newData = [
+      { tankType: 'OH T', waterLevel: '80%', motorStatus: 'OFF' },
+      { tankType: 'OH T', waterLevel: '75%', motorStatus: 'OFF' },
+      { tankType: 'UG S', waterLevel: '92%', motorStatus: 'ON' },
+    ];
+
+    const isDataChanged = JSON.stringify(newData) !== JSON.stringify(tableData);
+
+    if (isDataChanged) {
+      setTableData(newData);
+      setIsOn(false);
+    }
+  };
+
   useEffect(() => {
-    // Customize the header when the component mounts
     navigation.setOptions({
       headerTitle: 'Motor State',
+      headerRight: () => (
+        <TouchableHighlight
+          style={styles.refreshButton}
+          underlayColor="#d3d3d3" // Change the color when pressed
+          onPress={handleRefresh}
+        >
+          <MaterialCommunityIcons name="refresh" size={28} color="white" />
+        </TouchableHighlight>
+      ),
       headerStyle: {
-        backgroundColor: 'brown', // Background color
+        backgroundColor: 'brown',
       },
-      headerTintColor: 'white', // Text color
-      headerTitleAlign: 'left', // Align title to the left
+      headerTintColor: 'white',
+      headerTitleAlign: 'left',
     });
-  }, [navigation]);
+  }, [navigation, tableData]);
 
   const handleOffButtonPress = () => {
     setIsOn(false);
@@ -35,9 +59,12 @@ const MotorState = () => {
   const handleChangeButtonPress = () => {
     // Handle CHANGE button press
     const motorStatus = isOn ? 'ON' : 'OFF';
-    const updatedTableData = tableData.map((row) => ({ ...row, motorStatus }));
-    setTableData(updatedTableData);
+    setTableData(prevTableData => {
+      // Use the functional form of setTableData to ensure correct updates
+      return prevTableData.map(row => ({ ...row, motorStatus }));
+    });
   };
+  
 
   return (
     <View style={styles.container}>
@@ -69,7 +96,6 @@ const MotorState = () => {
         </TouchableOpacity>
       </View>
 
-      {/* Live Tank Data Table */}
       <View style={styles.liveTankDataTable}>
         <Text style={styles.liveTankDataTitle}>Live Tank Data</Text>
         <View style={styles.table}>
@@ -79,7 +105,6 @@ const MotorState = () => {
             <Text style={styles.tableHeader}>Motor Status</Text>
           </View>
 
-          {/* Rows */}
           {tableData.map((row, index) => (
             <View key={index} style={styles.tableRow}>
               <Text style={styles.tableCell}>{row.tankType}</Text>
@@ -94,7 +119,6 @@ const MotorState = () => {
         </View>
       </View>
 
-      {/* Tank Type Mapping */}
       <View style={styles.tankTypeMapping}>
         <Text style={styles.mappingText}>OH T => Overhead Tank</Text>
         <Text style={styles.mappingText}>UG S => Underground Sump</Text>
@@ -109,9 +133,19 @@ const styles = StyleSheet.create({
     justifyContent: 'top',
     padding: 16,
   },
+
+  refreshButton: {
+    padding: 10,
+    borderRadius: 5,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 7,
+  },
+
   motorOptions: {
     alignItems: 'center',
   },
+
   motorOptionsText: {
     fontSize: 18,
     fontWeight: 'bold',
@@ -119,7 +153,7 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   button: {
-    width: 180, // Same width for both buttons
+    width: 180,
     height: 40,
     justifyContent: 'center',
     alignItems: 'center',
@@ -131,7 +165,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   changeButton: {
-    width: 180, // Same width for both buttons
+    width: 180,
     height: 40,
     backgroundColor: 'black',
     justifyContent: 'center',
@@ -180,13 +214,19 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     color: 'black',
   },
-    tankTypeMapping: {
-    marginTop: 30,
+  tankTypeMapping: {
+    marginTop: 40,
     alignItems: 'center',
+    backgroundColor: 'lightgrey',
+    paddingVertical: 10,
+    paddingHorizontal: 25,
+    alignSelf: 'center',
+    borderRadius: 10,
   },
   mappingText: {
     fontSize: 16,
-    marginBottom: 15,
+    marginBottom: 5,
+    color: 'black',
   },
 });
 

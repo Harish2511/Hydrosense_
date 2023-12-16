@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useLayoutEffect } from 'react';
 import {
   View,
   Text,
   TouchableOpacity,
+  TouchableHighlight,
   StatusBar,
   StyleSheet,
   Dimensions,
@@ -21,6 +22,7 @@ import {
 import { fetchData } from '../AwsFunctions';
 import { useNavigation } from '@react-navigation/native';
 import DateSelector from './DateSelector';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 const tankHeight = 300; // Total height of the tank in centimeters
 
@@ -33,7 +35,6 @@ const Analytics = () => {
   const [category, setCategory] = useState('');
   const [showCalendar, setShowCalendar] = useState(false);
   const navigation = useNavigation();
-  
 
   const fetchDataFromDynamoDb = async () => {
     try {
@@ -59,7 +60,7 @@ const Analytics = () => {
     const filteredData = data.filter((item) => item.Date === formattedDate);
     setFilteredRecords(filteredData.slice(-15)); // Displaying the last 30 records
   };
- 
+
   const onDateChange = (newDate) => {
     setSelectedDate(newDate);
     filterRecords(tableData, newDate);
@@ -88,6 +89,22 @@ const Analytics = () => {
     setShowCalendar(!showCalendar);
   };
 
+  // Add refresh functionality to the header right icon
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerRight: () => (
+        <TouchableHighlight 
+          onPress={fetchDataFromDynamoDb} 
+          style={styles.refreshButton}
+          underlayColor="#d3d3d3"
+        >
+        <MaterialCommunityIcons name="refresh" size={28} color="white" />
+        </TouchableHighlight>
+      ),
+    });
+  }, [navigation, fetchDataFromDynamoDb]);
+
+
   return (
     <ScrollView
       contentContainerStyle={styles.container}
@@ -95,18 +112,16 @@ const Analytics = () => {
         <RefreshControl
           refreshing={isRefreshing}
           onRefresh={fetchDataFromDynamoDb}
-          colors={['#8B4513']} // Color of the refresh indicator
+          colors={['black']} // Change color to black
         />
       }
     >
-      <TouchableOpacity onPress={fetchDataFromDynamoDb} style={styles.button}>
-        <Text style={styles.buttonText}>Refresh Data</Text>
-      </TouchableOpacity>
 
       {/* Date Selector */}
-      <TouchableOpacity onPress={toggleCalendarModal} style={styles.datePickerButton}>
+      <TouchableOpacity onPress={toggleCalendarModal} style={[styles.datePickerButton, { width: 150, alignSelf: 'center' }]}
+      >
         <Text style={styles.datePickerButtonText}>
-          Select a Date to View Water Level
+          Select Date
         </Text>
       </TouchableOpacity>
       <Modal
@@ -124,13 +139,11 @@ const Analytics = () => {
       </Modal>
 
       <View style={styles.insightsContainer}>
-        <Text style={styles.insightsText}>
-          Motor State: {motorState || 'N/A'}
-        </Text>
-        <Text style={styles.insightsText}>
-          Category: {category || 'N/A'}
-        </Text>
-      </View>
+  <Text style={styles.insightsText}>
+    Motor State: {motorState || 'N/A'}      |      Category: {category || 'N/A'}
+  </Text>
+</View>
+
 
       <View>
         {/* Line Chart for Last 30 Records */}
@@ -149,8 +162,8 @@ const Analytics = () => {
           <VictoryLine
             data={distanceData.map((d, i) => ({ x: i, y: d }))}
             style={{
-              data: { stroke: '#8B4513', strokeWidth: 2 },
-              labels: { fontSize: 8, fill: '#8B4513' },
+              data: { stroke: 'brown', strokeWidth: 2 },
+              labels: { fontSize: 8, fill: 'brown' },
             }}
             labels={({ datum }) => `${datum.y} cm`}
             labelComponent={<VictoryTooltip />}
@@ -159,7 +172,7 @@ const Analytics = () => {
       </View>
 
       {/* Additional Insights */}
-      <Text style={styles.sectionHeader}>Additional Insights:</Text>
+      <Text style={styles.sectionHeader}>Additional Insights</Text>
 
       {/* Bar Chart for Daily Usage Statistics */}
       <View style={styles.chartContainer}>
@@ -178,7 +191,7 @@ const Analytics = () => {
           <VictoryAxis dependentAxis />
           <VictoryBar
             data={dailyUsageStatistics.map((item, index) => ({ x: index, y: item.usage }))}
-            style={{ data: { fill: '#8B4513' } }}
+            style={{ data: { fill: 'brown' } }}
             labels={({ datum }) => `${datum.y.toFixed(2)} cm`}
             labelComponent={<VictoryTooltip />}
           />
@@ -223,8 +236,15 @@ const styles = StyleSheet.create({
   container: {
     padding: 16,
   },
+  refreshButton: {
+    padding: 10,
+    borderRadius: 5,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 7,
+  },
   button: {
-    backgroundColor: '#8B4513',
+    backgroundColor: 'black', // Change background color to black
     padding: 10,
     margin: 10,
     borderRadius: 5,
@@ -232,9 +252,10 @@ const styles = StyleSheet.create({
   buttonText: {
     color: 'white',
     fontWeight: 'bold',
+    textAlign: 'center'
   },
   datePickerButton: {
-    backgroundColor: '#8B4513',
+    backgroundColor: 'black',
     padding: 10,
     margin: 10,
     borderRadius: 5,
@@ -262,7 +283,10 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   insightsContainer: {
-    backgroundColor: '#D2B48C',
+    backgroundColor: 'lightgrey',
+    alignSelf: 'center',
+    paddingHorizontal: 25,
+
     padding: 10,
     margin: 10,
     borderRadius: 5,
@@ -277,13 +301,20 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginTop: 20,
     marginBottom: 10,
-    color: '#8B4513',
+    color: 'brown',
+    textAlign: 'center',
   },
   subSectionHeader: {
     fontSize: 16,
     fontWeight: 'bold',
-    marginBottom: 10,
-    color: '#8B4513',
+    marginBottom: 0,
+    color: 'black',
+    textAlign: 'center',
+    backgroundColor: 'lightgrey',
+    alignSelf: 'center',
+    paddingVertical: 5,
+    paddingHorizontal: 15,
+    borderRadius: 5,
   },
   chartContainer: {
     marginBottom: 20,
