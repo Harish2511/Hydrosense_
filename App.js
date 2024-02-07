@@ -11,6 +11,7 @@ import MotorState from './modules/MotorState';
 import Waterlevel from './modules/Waterlevel';
 import TankScreen from './modules/TankScreen';
 import Forecasting from './modules/forecasting';
+import Report from './modules/Report';
 import { Image } from 'react-native'; // Import Image from react-native
 import * as Font from 'expo-font';
 
@@ -58,7 +59,7 @@ const App = () => {
 
     return (
       <DrawerContentScrollView {...props} contentContainerStyle={{ paddingTop: 0 }}>
-        <View style={{ backgroundColor: 'brown', padding: 16, marginBottom: 16 }}>
+        <View style={{ backgroundColor: 'brown', padding: 16, marginBottom: 16, marginTop:0}}>
           <Text style={{ fontSize: 20, fontWeight: 'bold', color: 'white' }}>Options</Text>
         </View>
 
@@ -91,6 +92,14 @@ const App = () => {
           onPress={() => handleRoutePress('Forecasting')}
           labelStyle={getLabelStyle('Forecasting')}
         />
+
+        <DrawerItem
+          label="Report"
+          onPress={() => handleRoutePress('Report')}
+          labelStyle={getLabelStyle('Report')}
+        />
+
+
         {loggedIn && (
           <DrawerItem
             label=""
@@ -123,6 +132,8 @@ const App = () => {
       title = 'Motor State';
     } else if (route.name === 'Waterlevel') {
       title = 'Water Level';
+    } else if (route.name === 'Report') {
+      title = 'Report';
     }
 
     return (
@@ -181,6 +192,15 @@ const App = () => {
             <Drawer.Screen
               name="Forecasting"
               component={Forecasting}
+              options={({ route }) => ({
+                headerTitle: () => <CustomAppBar route={route} />,
+                headerStyle: { backgroundColor: 'brown' },
+                headerTintColor: 'white',
+              })}
+            />
+            <Drawer.Screen
+              name="Report"
+              component={Report}
               options={({ route }) => ({
                 headerTitle: () => <CustomAppBar route={route} />,
                 headerStyle: { backgroundColor: 'brown' },

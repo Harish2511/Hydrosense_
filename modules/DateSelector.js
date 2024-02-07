@@ -1,9 +1,23 @@
+// DateSelector.js
+
 import React, { useState } from 'react';
-import { SafeAreaView, StyleSheet, Text, View } from 'react-native';
+import { SafeAreaView, StyleSheet, Text, View, TouchableOpacity } from 'react-native';
 import DatePicker from 'react-native-modern-datepicker';
 
-const DateSelector = ({ onDateChange }) => {
+const DateSelector = ({ onDateChange, onClose }) => {
   const [date, setDate] = useState(new Date());
+
+  const handleDateChange = (selectedDate) => {
+    const formattedDate = selectedDate.replace(/\//g, '-');
+    const parsedDate = new Date(formattedDate);
+
+    if (!isNaN(parsedDate.getTime())) {
+      setDate(parsedDate);
+      onDateChange(parsedDate);
+    } else {
+      console.error('Invalid date:', selectedDate);
+    }
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -20,7 +34,6 @@ const DateSelector = ({ onDateChange }) => {
           cancelBtnText="Cancel"
           customStyles={{
             dateIcon: {
-              // display: 'none',
               position: 'absolute',
               left: 0,
               top: 4,
@@ -30,21 +43,11 @@ const DateSelector = ({ onDateChange }) => {
               marginLeft: 36,
             },
           }}
-          onDateChange={(selectedDate) => {
-            // Replace slashes with hyphens in the date string
-            const formattedDate = selectedDate.replace(/\//g, '-');
-            const parsedDate = new Date(formattedDate);
-          
-            // Check if parsedDate is a valid date
-            if (!isNaN(parsedDate.getTime())) {
-              setDate(parsedDate);
-              onDateChange(parsedDate);
-            } else {
-              console.error('Invalid date:', selectedDate);
-            }
-          }}
-          
+          onDateChange={handleDateChange}
         />
+        <TouchableOpacity onPress={onClose} style={styles.closeButton}>
+          <Text style={styles.closeButtonText}>X</Text>
+        </TouchableOpacity>
       </View>
     </SafeAreaView>
   );
@@ -58,8 +61,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   datePickerStyle: {
-    width: 200,
+    width: 300,
     marginTop: 20,
+  },
+  closeButton: {
+    position: 'absolute',
+    top: 120,
+    right: 10,
+    backgroundColor: 'brown',
+    padding: 8,
+    borderRadius: 0,
+  },
+  closeButtonText: {
+    color: 'white',
+    fontWeight: 'bold',
+    fontSize: 16,
   },
 });
 
