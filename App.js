@@ -11,6 +11,7 @@ import MotorState from './modules/MotorState';
 import Waterlevel from './modules/Waterlevel';
 import TankScreen from './modules/TankScreen';
 import Forecasting from './modules/forecasting';
+import Grafana from './modules/Grafana';
 import Report from './modules/Report';
 import { Image } from 'react-native'; // Import Image from react-native
 import * as Font from 'expo-font';
@@ -98,6 +99,11 @@ const App = () => {
           onPress={() => handleRoutePress('Report')}
           labelStyle={getLabelStyle('Report')}
         />
+        <DrawerItem
+          label="Grafana"
+          onPress={() => handleRoutePress('Grafana')}
+          labelStyle={getLabelStyle('Grafana')}
+        />
 
 
         {loggedIn && (
@@ -134,6 +140,9 @@ const App = () => {
       title = 'Water Level';
     } else if (route.name === 'Report') {
       title = 'Report';
+    }
+    else if (route.name === 'Grafana') {
+      title = 'Grafana';
     }
 
     return (
@@ -201,6 +210,15 @@ const App = () => {
             <Drawer.Screen
               name="Report"
               component={Report}
+              options={({ route }) => ({
+                headerTitle: () => <CustomAppBar route={route} />,
+                headerStyle: { backgroundColor: 'brown' },
+                headerTintColor: 'white',
+              })}
+            />
+            <Drawer.Screen
+              name="Grafana"
+              component={Grafana}
               options={({ route }) => ({
                 headerTitle: () => <CustomAppBar route={route} />,
                 headerStyle: { backgroundColor: 'brown' },
