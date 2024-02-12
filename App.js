@@ -11,10 +11,9 @@ import MotorState from './modules/MotorState';
 import Waterlevel from './modules/Waterlevel';
 import TankScreen from './modules/TankScreen';
 import Forecasting from './modules/forecasting';
-import Grafana from './modules/Grafana';
 import Alert from './modules/Alert'
-
-
+import Grafana from './modules/Grafana';
+import Report from './modules/Report';
 import { Image } from 'react-native'; // Import Image from react-native
 import * as Font from 'expo-font';
 
@@ -62,7 +61,7 @@ const App = () => {
 
     return (
       <DrawerContentScrollView {...props} contentContainerStyle={{ paddingTop: 0 }}>
-        <View style={{ backgroundColor: 'brown', padding: 16, marginBottom: 16 }}>
+        <View style={{ backgroundColor: 'brown', padding: 16, marginBottom: 16, marginTop:0}}>
           <Text style={{ fontSize: 20, fontWeight: 'bold', color: 'white' }}>Options</Text>
         </View>
 
@@ -96,6 +95,16 @@ const App = () => {
           labelStyle={getLabelStyle('Forecasting')}
         />
 
+        <DrawerItem
+          label="Report"
+          onPress={() => handleRoutePress('Report')}
+          labelStyle={getLabelStyle('Report')}
+        />
+        <DrawerItem
+          label="Grafana"
+          onPress={() => handleRoutePress('Grafana')}
+          labelStyle={getLabelStyle('Grafana')}
+        />
         <DrawerItem
           label="Alerts"
           onPress={() => handleRoutePress('Alert')}
@@ -135,12 +144,16 @@ const App = () => {
       title = 'Motor State';
     } else if (route.name === 'Waterlevel') {
       title = 'Water Level';
-    }else if (route.name === 'Alert') {
-      title = 'Alert';
+    } else if (route.name === 'Report') {
+      title = 'Report';
     }
     else if (route.name === 'Grafana') {
       title = 'Grafana';
     }
+    else if (route.name === 'Alert') {
+      title = 'Alert';
+    }
+
 
     return (
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
@@ -205,8 +218,8 @@ const App = () => {
               })}
             />
             <Drawer.Screen
-              name="Alert"
-              component={Alert}
+              name="Report"
+              component={Report}
               options={({ route }) => ({
                 headerTitle: () => <CustomAppBar route={route} />,
                 headerStyle: { backgroundColor: 'brown' },
@@ -216,6 +229,15 @@ const App = () => {
             <Drawer.Screen
               name="Grafana"
               component={Grafana}
+              options={({ route }) => ({
+                headerTitle: () => <CustomAppBar route={route} />,
+                headerStyle: { backgroundColor: 'brown' },
+                headerTintColor: 'white',
+              })}
+            />
+            <Drawer.Screen
+              name="Alert"
+              component={Alert}
               options={({ route }) => ({
                 headerTitle: () => <CustomAppBar route={route} />,
                 headerStyle: { backgroundColor: 'brown' },
