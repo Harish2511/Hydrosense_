@@ -1,324 +1,165 @@
-import React, { useState, useEffect, useLayoutEffect } from 'react';
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  TouchableHighlight,
-  StatusBar,
-  StyleSheet,
-  Dimensions,
-  ScrollView,
-  RefreshControl,
-  Modal,
-} from 'react-native';
-import {
-  VictoryChart,
-  VictoryLine,
-  VictoryAxis,
-  VictoryTheme,
-  VictoryTooltip,
-  VictoryBar,
-} from 'victory-native';
-import { fetchData } from '../AwsFunctions';
-import { useNavigation } from '@react-navigation/native';
-import DateSelector from './DateSelector';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
+import React, { useState, useEffect } from "react";
+import { InfluxDB } from "@influxdata/influxdb-client";
+import { StyleSheet, View, Text, ScrollView, Button } from "react-native";
+import DatePicker from 'react-native-datepicker';
+import { VictoryChart, VictoryLine, VictoryAxis } from "victory-native";
+import { TextDecoder, TextEncoder } from 'text-encoding';
 
-const tankHeight = 300; // Total height of the tank in centimeters
+if (!global.TextDecoder) {
+  global.TextDecoder = TextDecoder;
+}
 
-const Analytics = () => {
-  const [tableData, setTableData] = useState([]);
-  const [isRefreshing, setIsRefreshing] = useState(false);
-  const [filteredRecords, setFilteredRecords] = useState([]);
-  const [selectedDate, setSelectedDate] = useState(new Date());
-  const [motorState, setMotorState] = useState('');
-  const [category, setCategory] = useState('');
-  const [showCalendar, setShowCalendar] = useState(false);
-  const navigation = useNavigation();
+// Polyfill TextEncoder if it doesn't exist
+if (!global.TextEncoder) {
+  global.TextEncoder = TextEncoder;
+}
 
-  const fetchDataFromDynamoDb = async () => {
-    try {
-      setIsRefreshing(true);
-      const data = await fetchData('SensorTableData');
-      console.log('Raw DynamoDB Response:', data);
+const token = '1f-jAzMp7AsoDQz-SLTYRLv43JRCNuMW_T8qq3AIuuz5aWJH-ktSHlV7zJCKmfyIGcOjrSIJ07cL7kYUmmzhPQ==';
+const org = 'abb6618f3fac8447';
+const url = 'https://us-east-1-1.aws.cloud2.influxdata.com';
+const bucket = 'Hydrosense';
 
-      // Update state only if there is new data
-      if (data.length > 0) {
-        setTableData(data);
-        filterRecords(data, selectedDate);
-        updateMotorStateAndCategory(selectedDate);
-      }
-    } catch (error) {
-      console.error('Error fetching data:', error);
-    } finally {
-      setIsRefreshing(false);
-    }
-  };
-
-  const filterRecords = (data, date) => {
-    const formattedDate = date.toISOString().split('T')[0];
-    const filteredData = data.filter((item) => item.Date === formattedDate);
-    setFilteredRecords(filteredData.slice(-15)); // Displaying the last 30 records
-  };
-
-  const onDateChange = (newDate) => {
-    setSelectedDate(newDate);
-    filterRecords(tableData, newDate);
-    updateMotorStateAndCategory(newDate);
-  };
-
-  const updateMotorStateAndCategory = (date) => {
-    const formattedDate = date.toISOString().split('T')[0];
-    const lastRecord = tableData.find((item) => item.Date === formattedDate);
-
-    setMotorState(lastRecord?.motorstate || '');
-    setCategory(lastRecord?.Category || '');
-  };
-
-  const labelData = filteredRecords.map((item) => item.Time || '');
-  const distanceData = filteredRecords.map((item) => tankHeight - item.Distance || 0);
-
-  const averageWaterUsage = calculateAverageWaterUsage(filteredRecords);
-  const dailyUsageStatistics = calculateDailyUsageStatistics(filteredRecords);
-
-  useEffect(() => {
-    fetchDataFromDynamoDb();
-  }, []);
-
-  const toggleCalendarModal = () => {
-    setShowCalendar(!showCalendar);
-  };
-
-  // Add refresh functionality to the header right icon
-  useLayoutEffect(() => {
-    navigation.setOptions({
-      headerRight: () => (
-        <TouchableHighlight 
-          onPress={fetchDataFromDynamoDb} 
-          style={styles.refreshButton}
-          underlayColor="#d3d3d3"
-        >
-        <MaterialCommunityIcons name="refresh" size={28} color="white" />
-        </TouchableHighlight>
-      ),
-    });
-  }, [navigation, fetchDataFromDynamoDb]);
-
-
+const InfluxChart = ({ data }) => {
   return (
-    <ScrollView
-      contentContainerStyle={styles.container}
-      refreshControl={
-        <RefreshControl
-          refreshing={isRefreshing}
-          onRefresh={fetchDataFromDynamoDb}
-          colors={['black']} // Change color to black
+    <View>
+      <VictoryChart height={300} width={350}>
+        <VictoryLine
+          style={{ data: { stroke: '#34d5eb', strokeWidth: 1 } }}
+          data={data}
+          x="name"
+          y="distance"
         />
-      }
-    >
-
-      {/* Date Selector */}
-      <TouchableOpacity onPress={toggleCalendarModal} style={[styles.datePickerButton, { width: 150, alignSelf: 'center' }]}
-      >
-        <Text style={styles.datePickerButtonText}>
-          Select Date
-        </Text>
-      </TouchableOpacity>
-      <Modal
-        animationType="slide"
-        transparent={true}
-        visible={showCalendar}
-        onRequestClose={toggleCalendarModal}
-      >
-        <View style={styles.modalContainer}>
-          <DateSelector onDateChange={onDateChange} />
-          <TouchableOpacity onPress={toggleCalendarModal} style={styles.modalCloseButton}>
-            <Text style={styles.modalCloseButtonText}>Close Calendar</Text>
-          </TouchableOpacity>
-        </View>
-      </Modal>
-
-      <View style={styles.insightsContainer}>
-  <Text style={styles.insightsText}>
-    Motor State: {motorState || 'N/A'}      |      Category: {category || 'N/A'}
-  </Text>
-</View>
-
-
-      <View>
-        {/* Line Chart for Last 30 Records */}
-        <VictoryChart
-          theme={VictoryTheme.material}
-          width={Dimensions.get('window').width - 16}
-          height={220}
-          domainPadding={{ x: 20 }}
-        >
-          <VictoryAxis
-            tickValues={labelData.map((_, index) => index)}
-            tickFormat={labelData}
-            style={{ tickLabels: { fontSize: 8, angle: 45 } }}
-          />
-          <VictoryAxis dependentAxis />
-          <VictoryLine
-            data={distanceData.map((d, i) => ({ x: i, y: d }))}
-            style={{
-              data: { stroke: 'brown', strokeWidth: 2 },
-              labels: { fontSize: 8, fill: 'brown' },
-            }}
-            labels={({ datum }) => `${datum.y} cm`}
-            labelComponent={<VictoryTooltip />}
-          />
-        </VictoryChart>
-      </View>
-
-      {/* Additional Insights */}
-      <Text style={styles.sectionHeader}>Additional Insights</Text>
-
-      {/* Bar Chart for Daily Usage Statistics */}
-      <View style={styles.chartContainer}>
-        <Text style={styles.subSectionHeader}>Daily Water Usage Statistics:</Text>
-        <VictoryChart
-          theme={VictoryTheme.material}
-          width={Dimensions.get('window').width - 16}
-          height={220}
-          domainPadding={{ x: 20 }}
-        >
-          <VictoryAxis
-            tickValues={dailyUsageStatistics.map((_, index) => index)}
-            tickFormat={dailyUsageStatistics.map((item) => item.day)}
-            style={{ tickLabels: { fontSize: 10, angle: 45 } }}
-          />
-          <VictoryAxis dependentAxis />
-          <VictoryBar
-            data={dailyUsageStatistics.map((item, index) => ({ x: index, y: item.usage }))}
-            style={{ data: { fill: 'brown' } }}
-            labels={({ datum }) => `${datum.y.toFixed(2)} cm`}
-            labelComponent={<VictoryTooltip />}
-          />
-        </VictoryChart>
-      </View>
-
-      {/* Average Water Usage */}
-      <View style={styles.insightsContainer}>
-        <Text style={styles.insightsText}>
-          Average Water Usage: {averageWaterUsage.toFixed(2)} cm
-        </Text>
-      </View>
-
-      <StatusBar style="auto" />
-    </ScrollView>
+        <VictoryAxis
+          tickFormat={(t) => {
+            const date = new Date(t);
+            return `${date.getHours()}:${date.getMinutes()}`;
+          }}
+        />
+      </VictoryChart>
+    </View>
   );
 };
 
-const calculateAverageWaterUsage = (data) => {
-  const totalUsage = data.reduce((acc, entry) => acc + (tankHeight - entry.Distance), 0);
-  return totalUsage / data.length;
-};
+const App = () => {
+  const [latestRecords, setLatestRecords] = useState([]);
+  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [analytics, setAnalytics] = useState({});
 
-const calculateDailyUsageStatistics = (data) => {
-  const dailyData = data.reduce((acc, entry) => {
-    const dateTime = entry.Date + ' ' + entry.Time;
-    if (!acc[dateTime]) {
-      acc[dateTime] = { sum: 0, count: 0 };
-    }
-    acc[dateTime].sum += tankHeight - entry.Distance; // Adjusted for tank height
-    acc[dateTime].count += 1;
-    return acc;
-  }, {});
+  useEffect(() => {
+    fetchData();
+    const interval = setInterval(fetchData, 5000); // Update data every 5 seconds
+    return () => clearInterval(interval);
+  }, [selectedDate]);
 
-  return Object.keys(dailyData).map((dateTime) => ({
-    day: dateTime,
-    usage: dailyData[dateTime].sum / dailyData[dateTime].count,
-  }));
+  const fetchData = async () => {
+    const client = new InfluxDB({ url, token });
+    const queryApi = client.getQueryApi(org);
+
+    const startDate = selectedDate.toISOString().split('T')[0];
+    const query = `from(bucket: "${bucket}")
+      |> range(start: ${startDate}T00:00:00Z, stop: ${startDate}T23:59:59Z)
+      |> filter(fn: (r) => r["_measurement"] == "WaterLevel")
+      |> filter(fn: (r) => r["_field"] == "distance")
+      |> last(n: 2)`;
+
+    const res = await queryApi.collectRows(query);
+    setLatestRecords(res);
+    calculateAnalytics(res);
+  };
+
+  const calculateAnalytics = (data) => {
+    const waterLevels = data.map(item => item["_value"]);
+    const maxWaterLevel = Math.max(...waterLevels);
+    const minWaterLevel = Math.min(...waterLevels);
+
+    setAnalytics({
+      maxWaterLevel,
+      minWaterLevel,
+    });
+  };
+
+  const handleDateChange = (date) => {
+    setSelectedDate(date);
+  };
+
+  return (
+    <View style={styles.container}>
+      <View style={styles.header}>
+        <Text style={styles.headerText}>Water Level Analytics</Text>
+      </View>
+      <View style={styles.datePickerContainer}>
+        <DatePicker
+          style={{width: 200}}
+          date={selectedDate}
+          mode="date"
+          format="YYYY-MM-DD"
+          confirmBtnText="Confirm"
+          cancelBtnText="Cancel"
+          onDateChange={handleDateChange}
+        />
+      </View>
+      <ScrollView>
+        <View style={styles.content}>
+          <Text style={styles.subHeaderText}>Latest Records</Text>
+          <ScrollView horizontal>
+            <View style={styles.latestRecords}>
+              {latestRecords.map((record, index) => (
+                <Text key={index} style={styles.recordText}>
+                  {new Date(record["_time"]).toLocaleString()}: {record["_value"]}m
+                </Text>
+              ))}
+            </View>
+          </ScrollView>
+          <View style={styles.chartContainer}>
+            <InfluxChart data={latestRecords.map(item => ({ distance: item["_value"], name: new Date(item["_time"]) }))} />
+          </View>
+          <Text style={styles.subHeaderText}>Daily Analytics</Text>
+          <Text>Date: {selectedDate.toLocaleDateString()}</Text>
+          <Text>Maximum Water Level: {analytics.maxWaterLevel}m</Text>
+          <Text>Minimum Water Level: {analytics.minWaterLevel}m</Text>
+        </View>
+      </ScrollView>
+    </View>
+  );
 };
 
 const styles = StyleSheet.create({
   container: {
-    padding: 16,
-  },
-  refreshButton: {
-    padding: 10,
-    borderRadius: 5,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 7,
-  },
-  button: {
-    backgroundColor: 'black', // Change background color to black
-    padding: 10,
-    margin: 10,
-    borderRadius: 5,
-  },
-  buttonText: {
-    color: 'white',
-    fontWeight: 'bold',
-    textAlign: 'center'
-  },
-  datePickerButton: {
-    backgroundColor: 'black',
-    padding: 10,
-    margin: 10,
-    borderRadius: 5,
-  },
-  datePickerButtonText: {
-    color: 'white',
-    fontWeight: 'bold',
-    textAlign: 'center',
-  },
-  modalContainer: {
     flex: 1,
-    justifyContent: 'center',
+    backgroundColor: '#fff',
+  },
+  header: {
+    padding: 20,
+    backgroundColor: '#34d5eb',
     alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
   },
-  modalCloseButton: {
-    backgroundColor: '#8B4513',
-    padding: 10,
-    margin: 10,
-    borderRadius: 5,
-  },
-  modalCloseButtonText: {
-    color: 'white',
+  headerText: {
+    fontSize: 20,
     fontWeight: 'bold',
-    textAlign: 'center',
+    color: '#fff',
   },
-  insightsContainer: {
-    backgroundColor: 'lightgrey',
-    alignSelf: 'center',
-    paddingHorizontal: 25,
-
-    padding: 10,
-    margin: 10,
-    borderRadius: 5,
+  content: {
+    padding: 20,
   },
-  insightsText: {
-    fontWeight: 'bold',
-    fontSize: 16,
-    marginBottom: 5,
-  },
-  sectionHeader: {
+  subHeaderText: {
     fontSize: 18,
     fontWeight: 'bold',
-    marginTop: 20,
     marginBottom: 10,
-    color: 'brown',
-    textAlign: 'center',
   },
-  subSectionHeader: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginBottom: 0,
-    color: 'black',
-    textAlign: 'center',
-    backgroundColor: 'lightgrey',
-    alignSelf: 'center',
-    paddingVertical: 5,
-    paddingHorizontal: 15,
-    borderRadius: 5,
+  latestRecords: {
+    flexDirection: 'row',
+  },
+  recordText: {
+    marginRight: 10,
   },
   chartContainer: {
-    marginBottom: 20,
+    marginTop: 20,
+    alignItems: 'center',
+  },
+  datePickerContainer: {
+    alignItems: 'center',
+    marginVertical: 10,
   },
 });
 
-export default Analytics;
+export default App;
