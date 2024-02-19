@@ -1,12 +1,18 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableHighlight, StyleSheet } from 'react-native';
-import { useFocusEffect, useNavigation } from '@react-navigation/native';
+import { useNavigation } from '@react-navigation/native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { InfluxDB } from "@influxdata/influxdb-client";
 
 const Waterlevel = () => {
   const navigation = useNavigation();
+  const [tank1Data, setTank1Data] = useState({
+    waterLevel: 0,
+    timestamp: new Date(),
+  });
 
   useEffect(() => {
+    fetchData(); // Fetch initial data
     navigation.setOptions({
       headerTitle: 'Water Level',
       headerRight: () => (
@@ -21,7 +27,34 @@ const Waterlevel = () => {
     });
   }, [navigation]);
 
-  const getRandomWaterLevel = () => Math.floor(Math.random() * 100);
+  const fetchData = async () => {
+    // Fetch data from InfluxDB for Overhead Tank 1
+    const token = '1f-jAzMp7AsoDQz-SLTYRLv43JRCNuMW_T8qq3AIuuz5aWJH-ktSHlV7zJCKmfyIGcOjrSIJ07cL7kYUmmzhPQ==';
+    const org = 'abb6618f3fac8447';
+    const url = 'https://us-east-1-1.aws.cloud2.influxdata.com';
+    const bucket = 'Hydrosense';
+
+    const client = new InfluxDB({ url, token });
+    const queryApi = client.getQueryApi(org);
+
+    const query = `from(bucket: "${bucket}")
+      |> range(start: -2d)
+      |> filter(fn: (r) => r["_measurement"] == "WaterLevel" and r["_field"] == "distance")
+      |> last()`;
+
+    const res = await queryApi.collectRows(query);
+    if (res.length > 0) {
+      const latestWaterLevel = res[0]["_value"];
+      setTank1Data({
+        waterLevel: latestWaterLevel,
+        timestamp: new Date(),
+      });
+    }
+  };
+
+  const handleRefresh = () => {
+    fetchData(); // Refresh data
+  };
 
   const getLevelCategory = (waterLevel) => {
     if (waterLevel >= 90) return 'A';
@@ -37,65 +70,21 @@ const Waterlevel = () => {
     return 'HIGH';
   };
 
-  const [tank1Data, setTank1Data] = useState({
-    waterLevel: 95,
-    timestamp: new Date(),
-  });
-
-  const [tank2Data, setTank2Data] = useState({
-    waterLevel: 90,
-    timestamp: new Date(),
-  });
-
-  const [sumpData, setSumpData] = useState({
-    waterLevel: 53,
-    timestamp: new Date(),
-  });
-
-  const handleRefresh = () => {
-    setTank1Data({
-      waterLevel: Math.max(tank1Data.waterLevel - 2, 0),
-      timestamp: new Date(),
-    });
-
-    setTank2Data({
-      waterLevel: Math.max(tank2Data.waterLevel - 2, 0),
-      timestamp: new Date(),
-    });
-
-    setSumpData({
-      waterLevel: getRandomWaterLevel(),
-      timestamp: new Date(),
-    });
-  };
-
-  useFocusEffect(
-    useCallback(() => {
-      setTank1Data((prevData) => ({ ...prevData, timestamp: new Date() }));
-      setTank2Data((prevData) => ({ ...prevData, timestamp: new Date() }));
-      setSumpData((prevData) => ({ ...prevData, timestamp: new Date() }));
-    }, [])
-  );
-
-  const renderTank = (tankData, tankNumber, backgroundColor, title, initialWaterLevel) => {
-    const levelCategory = getLevelCategory(tankData.waterLevel);
-    const riskLevel = getRiskLevel(levelCategory);
-    const tankHeight = 300; // Assuming the total height of the tank is 300 cm
-    const tankHeightBasedOnWaterLevel = (tankData.waterLevel / 100) * tankHeight;
-
+  const renderTank = (tankData, title, backgroundColor) => {
+    const levelCategory = tankData.waterLevel >= 0 ? getLevelCategory(tankData.waterLevel) : 'N/A';
+    const riskLevel = levelCategory !== 'N/A' ? getRiskLevel(levelCategory) : 'N/A';
+    const waterLevelText = tankData.waterLevel >= 0 ? `${tankData.waterLevel} cm` : 'N/A';
+    const timestampText = tankData.timestamp instanceof Date ? `Updated on ${tankData.timestamp.toString()}` : '';
+  
     return (
-      <View style={[styles.tankContainer, { backgroundColor }]} key={tankNumber}>
+      <View style={[styles.tankContainer, { backgroundColor }]}>
         <View style={styles.tankBox}>
           <Text style={styles.heading}>{title}</Text>
           <View style={styles.divider}></View>
-          <Text>{`Water Level: ${tankData.waterLevel}% (${tankHeightBasedOnWaterLevel.toFixed(
-            2
-          )} cm)`}</Text>
-          <View style={styles.line}></View>
-          <Text>Level Category: {levelCategory}</Text>
-          <View style={styles.line}></View>
-          <Text>Risk Level: {riskLevel === 'HIGH' ? <Text style={styles.highRisk}>{riskLevel}</Text> : riskLevel}</Text>
-          <Text style={styles.timestamp}>Updated on {tankData.timestamp.toString()}</Text>
+          <Text style={styles.tankInfo}>{`Water Level: ${waterLevelText}`}</Text>
+          <Text style={styles.tankInfo}>Level Category: {levelCategory}</Text>
+          <Text style={styles.tankInfo}>Risk Level: {riskLevel}</Text>
+          <Text style={[styles.tankInfo, styles.timestamp]}>{timestampText}</Text>
         </View>
       </View>
     );
@@ -103,21 +92,9 @@ const Waterlevel = () => {
 
   return (
     <View style={styles.container}>
-      {renderTank(
-        { ...tank1Data, waterLevel: Math.max(tank1Data.waterLevel - 2, 0) },
-        1,
-        'lightgray',
-        'Overhead Tank 1',
-        95
-      )}
-      {renderTank(
-        { ...tank2Data, waterLevel: Math.max(tank2Data.waterLevel - 2, 0) },
-        2,
-        'lightgray',
-        'Overhead Tank 2',
-        90
-      )}
-      {renderTank(sumpData, 'Underground Sump', 'lightblue', 'Underground Sump', 53)}
+      {renderTank(tank1Data, 'Overhead Tank 1', 'lightgrey')}
+      {renderTank({ waterLevel: -1, timestamp: new Date() }, 'Overhead Tank 2', 'lightgrey')}
+      {renderTank({ waterLevel: -1, timestamp: new Date() }, 'Underground Sump', 'lightblue')}
     </View>
   );
 };
@@ -129,12 +106,13 @@ const styles = StyleSheet.create({
     backgroundColor: 'white',
   },
   tankContainer: {
-    marginBottom: 16,
+    marginBottom: 14,
+    borderRadius: 8,
   },
   tankBox: {
-    borderRadius: 10,
     padding: 16,
-    marginBottom: 8,
+    borderRadius: 10,
+    marginBottom: 5,
   },
   heading: {
     color: 'black',
@@ -147,8 +125,8 @@ const styles = StyleSheet.create({
     backgroundColor: 'black',
     marginBottom: 8,
   },
-  line: {
-    height: 8, // Added spacing between lines
+  tankInfo: {
+    marginBottom: 5,
   },
   timestamp: {
     color: 'blue',
@@ -161,10 +139,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 7,
-  },
-  highRisk: {
-    color: 'red',
-    fontWeight: 'bold',
   },
 });
 

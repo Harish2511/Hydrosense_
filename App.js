@@ -14,6 +14,7 @@ import Forecasting from './modules/forecasting';
 import Alert from './modules/Alert'
 import Grafana from './modules/Grafana';
 import Report from './modules/Report';
+import Combined from './modules/Combined'
 import { Image } from 'react-native'; // Import Image from react-native
 import * as Font from 'expo-font';
 
@@ -64,6 +65,12 @@ const App = () => {
         <View style={{ backgroundColor: 'brown', padding: 16, marginBottom: 16, marginTop:0}}>
           <Text style={{ fontSize: 20, fontWeight: 'bold', color: 'white' }}>Options</Text>
         </View>
+
+        <DrawerItem
+          label="Water Level Monitor"
+          onPress={() => handleRoutePress('Combined')}
+          labelStyle={getLabelStyle('Combined')}
+        />
 
         <DrawerItem
           label="Tank Screen"
@@ -153,6 +160,10 @@ const App = () => {
     else if (route.name === 'Alert') {
       title = 'Alert';
     }
+    else if (route.name === 'Combined') {
+      title = 'Combined';
+    }
+
 
 
     return (
@@ -175,6 +186,15 @@ const App = () => {
             <Drawer.Screen
               name="MotorState"
               component={MotorState}
+              options={({ route }) => ({
+                headerTitle: () => <CustomAppBar route={route} />,
+                headerStyle: { backgroundColor: 'brown' },
+                headerTintColor: 'white',
+              })}
+            />
+            <Drawer.Screen
+              name="Combined"
+              component={Combined}
               options={({ route }) => ({
                 headerTitle: () => <CustomAppBar route={route} />,
                 headerStyle: { backgroundColor: 'brown' },

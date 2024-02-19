@@ -2,13 +2,19 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, TouchableHighlight, StyleSheet } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { InfluxDB } from "@influxdata/influxdb-client";
+
+const token = '1f-jAzMp7AsoDQz-SLTYRLv43JRCNuMW_T8qq3AIuuz5aWJH-ktSHlV7zJCKmfyIGcOjrSIJ07cL7kYUmmzhPQ==';
+const org = 'abb6618f3fac8447';
+const url = 'https://us-east-1-1.aws.cloud2.influxdata.com';
+const bucket = 'Hydrosense';
 
 const MotorState = () => {
   const [isOn, setIsOn] = useState(false);
   const [tableData, setTableData] = useState([
-    { tankType: 'OHT 1', waterLevel: '95%', motorStatus: 'OFF' },
-    { tankType: 'OHT 2', waterLevel: '90%', motorStatus: 'OFF' },
-    { tankType: 'UGS', waterLevel: '53%', motorStatus: 'ON' },
+    { tankType: 'OHT 1', waterLevel: '95%' },
+    { tankType: 'OHT 2', waterLevel: 'N/A' },
+    { tankType: 'UGS', waterLevel: 'N/A' },
   ]);
 
   const navigation = useNavigation();
@@ -33,19 +39,39 @@ const MotorState = () => {
     });
   }, [navigation, tableData]);
 
-  const handleRefresh = () => {
-    const newData = [
-      { tankType: 'OHT 1', waterLevel: '92%', motorStatus: 'OFF' },
-      { tankType: 'OHT 2', waterLevel: '90%', motorStatus: 'OFF' },
-      { tankType: 'UGS', waterLevel: '53%', motorStatus: 'ON' },
-    ];
+  useEffect(() => {
+    fetchData(); // Fetch initial data
+  }, []);
 
-    const isDataChanged = JSON.stringify(newData) !== JSON.stringify(tableData);
+  const fetchData = async () => {
+    // Fetch data from InfluxDB for Overhead Tank 1
+    const client = new InfluxDB({ url, token });
+    const queryApi = client.getQueryApi(org);
 
-    if (isDataChanged) {
-      setTableData(newData);
-      setIsOn(false);
+    const query = `
+      from(bucket: "${bucket}")
+      |> range(start: -2d)
+      |> filter(fn: (r) => r["_measurement"] == "WaterLevel" and r["_field"] == "distance")
+      |> last()
+    `;
+
+    const res = await queryApi.collectRows(query);
+    if (res.length > 0) {
+      const latestWaterLevel = res[0]["_value"];
+      const percentage = (latestWaterLevel / 300) * 100; // Assuming the max capacity is 300cm
+      setTableData(prevData => {
+        return prevData.map(item => {
+          if (item.tankType === 'OHT 1') {
+            return { ...item, waterLevel: `${Math.round(percentage)}%` };
+          }
+          return item;
+        });
+      });
     }
+  };
+
+  const handleRefresh = () => {
+    fetchData(); // Refresh data
   };
 
   const handleOffButtonPress = () => {
@@ -61,7 +87,7 @@ const MotorState = () => {
     const motorStatus = isOn ? 'ON' : 'OFF';
     setTableData(prevTableData => {
       // Use the functional form of setTableData to ensure correct updates
-      return prevTableData.map(row => ({ ...row, motorStatus }));
+      return prevTableData.map(row => ({ ...row }));
     });
   };
 
@@ -101,18 +127,12 @@ const MotorState = () => {
           <View style={styles.tableRow}>
             <Text style={styles.tableHeader}>Tank Type</Text>
             <Text style={styles.tableHeader}>Water Level</Text>
-            <Text style={styles.tableHeader}>Motor Status</Text>
           </View>
 
           {tableData.map((row, index) => (
             <View key={index} style={styles.tableRow}>
               <Text style={styles.tableCell}>{row.tankType}</Text>
               <Text style={styles.tableCell}>{row.waterLevel}</Text>
-              {row.tankType === 'UGS' ? (
-                <Text style={styles.tableCellSubtitle}>-</Text>
-              ) : (
-                <Text style={styles.tableCell}>{row.motorStatus}</Text>
-              )}
             </View>
           ))}
         </View>
@@ -205,13 +225,6 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 5,
     textAlign: 'center',
-  },
-  tableCellSubtitle: {
-    flex: 1,
-    padding: 5,
-    fontWeight: 'bold',
-    textAlign: 'center',
-    color: 'black',
   },
   tankTypeMapping: {
     marginTop: 40,

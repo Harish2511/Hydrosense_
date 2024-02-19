@@ -2,13 +2,19 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, Image, StyleSheet, TouchableOpacity, TouchableHighlight } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { InfluxDB } from "@influxdata/influxdb-client";
+
+const token = '1f-jAzMp7AsoDQz-SLTYRLv43JRCNuMW_T8qq3AIuuz5aWJH-ktSHlV7zJCKmfyIGcOjrSIJ07cL7kYUmmzhPQ==';
+const org = 'abb6618f3fac8447';
+const url = 'https://us-east-1-1.aws.cloud2.influxdata.com';
+const bucket = 'Hydrosense';
 
 const TankScreen = () => {
   const navigation = useNavigation();
   const [tankTitle, setTankTitle] = useState('Overhead Tank 1');
   const [isLeftButtonEnabled, setLeftButtonEnabled] = useState(false);
   const [isRightButtonEnabled, setRightButtonEnabled] = useState(true);
-  const [waterLevel, setWaterLevel] = useState(95); // Initial water level for Overhead Tank 1
+  const [waterLevelCm, setWaterLevelCm] = useState(0); // Initial water level in centimeters
   const tankCapacity = 1000; // Static tank capacity
 
   useEffect(() => {
@@ -25,17 +31,53 @@ const TankScreen = () => {
         </TouchableHighlight>
       ),
     });
+
+    fetchData(); // Fetch initial data
   }, [navigation]);
+
+  const fetchData = async () => {
+    // Fetch data from InfluxDB for Overhead Tank 1
+    const client = new InfluxDB({ url, token });
+    const queryApi = client.getQueryApi(org);
+
+    const query = `from(bucket: "${bucket}")
+      |> range(start: -2d)
+      |> filter(fn: (r) => r["_measurement"] == "WaterLevel" and r["_field"] == "distance")
+      |> last()`;
+
+    const res = await queryApi.collectRows(query);
+    if (res.length > 0) {
+      const latestWaterLevel = res[0]["_value"];
+      setWaterLevelCm(latestWaterLevel);
+      updateButtonStatus(latestWaterLevel);
+    }
+  };
+
+  const updateButtonStatus = (latestWaterLevel) => {
+    // Update button status based on latest water level
+    if (tankTitle === 'Overhead Tank 1') {
+      if (latestWaterLevel >= 95) {
+        setLeftButtonEnabled(false);
+      } else {
+        setLeftButtonEnabled(true);
+      }
+    }
+
+    if (latestWaterLevel <= 5) {
+      setRightButtonEnabled(false);
+    } else {
+      setRightButtonEnabled(true);
+    }
+  };
 
   const handleLeftButtonPress = () => {
     if (tankTitle === 'Overhead Tank 2') {
       setTankTitle('Overhead Tank 1');
-      setWaterLevel(95);
       setLeftButtonEnabled(false);
-      setRightButtonEnabled(true);
+      fetchData(); // Fetch data for Overhead Tank 1
     } else if (tankTitle === 'Underground Sump') {
       setTankTitle('Overhead Tank 2');
-      setWaterLevel(90);
+      setWaterLevelCm(90);
       setRightButtonEnabled(true);
     }
   };
@@ -43,49 +85,34 @@ const TankScreen = () => {
   const handleRightButtonPress = () => {
     if (tankTitle === 'Overhead Tank 1') {
       setTankTitle('Overhead Tank 2');
-      setWaterLevel(90);
+      setWaterLevelCm(90);
       setLeftButtonEnabled(true);
     } else if (tankTitle === 'Overhead Tank 2') {
       setTankTitle('Underground Sump');
-      setWaterLevel(53);
+      setWaterLevelCm(53);
       setRightButtonEnabled(false);
     }
   };
 
   const handleRefresh = () => {
-    // Refresh logic, if needed
-    // For now, let's just update the water level with a random value
-    setWaterLevel(Math.max(Math.floor(Math.random() * 101), 0));
+    fetchData(); // Refresh data
   };
 
-  // Define an array of image paths based on water levels
-  const waterLevelImages = [
-    require('./images/Lvl0.png'),
-    require('./images/lvl1.png'),
-    require('./images/lvl2.png'),
-    require('./images/lvl3.png'),
-    require('./images/lvl4.png'),
-    require('./images/lvl5.png'),
-    require('./images/lvl6.png'),
-    require('./images/lvl7.png'),
-  ];
-
   // Determine the appropriate image based on the water level
-  const getImageBasedOnWaterLevel = () => {
-    if (waterLevel >= 0 && waterLevel <= 5) return waterLevelImages[0];
-    if (waterLevel >= 6 && waterLevel <= 15) return waterLevelImages[1];
-    if (waterLevel >= 16 && waterLevel <= 29) return waterLevelImages[2];
-    if (waterLevel >= 30 && waterLevel <= 42) return waterLevelImages[3];
-    if (waterLevel >= 43 && waterLevel <= 57) return waterLevelImages[4];
-    if (waterLevel >= 58 && waterLevel <= 71) return waterLevelImages[5];
-    if (waterLevel >= 72 && waterLevel <= 85) return waterLevelImages[6];
-    if (waterLevel >= 86 && waterLevel <= 100) return waterLevelImages[7];
+  const getTankImage = () => {
+    if (waterLevelCm >= 290) return require('./images/lvl7.png');
+    if (waterLevelCm >= 257.1) return require('./images/lvl6.png');
+    if (waterLevelCm >= 214.25) return require('./images/lvl5.png');
+    if (waterLevelCm >= 171.4) return require('./images/lvl4.png');
+    if (waterLevelCm >= 128.55) return require('./images/lvl3.png');
+    if (waterLevelCm >= 85.71) return require('./images/lvl2.png');
+    if (waterLevelCm >= 42.85) return require('./images/lvl1.png');
+    return require('./images/Lvl0.png');
   };
 
   const handleMotorSettingsPress = () => {
     // Navigate to "MotorState.js" page
     navigation.navigate('MotorState'); // Make sure you have 'MotorState' as the name of the corresponding screen in your navigator
-    
   };
 
   return (
@@ -94,7 +121,7 @@ const TankScreen = () => {
         <View style={styles.titleContainer}>
           <Text style={styles.titleText}>{tankTitle}</Text>
         </View>
-        <Image source={getImageBasedOnWaterLevel()} style={styles.image} />
+        <Image source={getTankImage()} style={styles.image} />
 
         <View style={styles.navigationButtons}>
           <TouchableOpacity
@@ -122,9 +149,10 @@ const TankScreen = () => {
         </View>
 
         <View style={styles.infoContainer}>
-          <Text style={styles.infoText}>{`Water Level: ${waterLevel}% (${((waterLevel / 100) * 300).toFixed(1)} cm)`}</Text>
+          <Text style={styles.infoText}>{`Water Level: ${waterLevelCm} cm (${Math.round((waterLevelCm / 300) * 100)}%)`}</Text>
           <Text style={styles.infoText}>{`Tank Capacity: ${tankCapacity} Liters`}</Text>
         </View>
+
       </View>
 
       <TouchableOpacity
@@ -136,6 +164,8 @@ const TankScreen = () => {
     </View>
   );
 };
+
+
 
 const styles = StyleSheet.create({
   container: {
