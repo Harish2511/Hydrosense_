@@ -27,7 +27,7 @@ const AlertPage = () => {
 
       const query = `
         from(bucket: "${bucket}")
-        |> range(start: -1d)
+        |> range(start: -3d)
         |> filter(fn: (r) => r["_measurement"] == "WaterLevel")
         |> keep(columns: ["_time", "_value"])
         |> sort(columns:["_time"])

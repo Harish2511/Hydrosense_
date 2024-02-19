@@ -38,13 +38,15 @@ const Waterlevel = () => {
     const queryApi = client.getQueryApi(org);
 
     const query = `from(bucket: "${bucket}")
-      |> range(start: -2d)
-      |> filter(fn: (r) => r["_measurement"] == "WaterLevel" and r["_field"] == "distance")
-      |> last()`;
+    |> range(start: -2d)
+    |> filter(fn: (r) => r["_measurement"] == "WaterLevel")
+    |> keep(columns: ["_time", "_value"])
+    |> sort(columns:["_time"])`;
+    ;
 
     const res = await queryApi.collectRows(query);
     if (res.length > 0) {
-      const latestWaterLevel = res[0]["_value"];
+      const latestWaterLevel = res[res.length-1]["_value"];
       setTank1Data({
         waterLevel: latestWaterLevel,
         timestamp: new Date(),
@@ -57,10 +59,10 @@ const Waterlevel = () => {
   };
 
   const getLevelCategory = (waterLevel) => {
-    if (waterLevel >= 90) return 'A';
-    if (waterLevel >= 75) return 'B';
+    if (waterLevel >= 200) return 'A';
+    if (waterLevel >= 100) return 'B';
     if (waterLevel >= 50) return 'C';
-    if (waterLevel >= 25) return 'D';
+    if (waterLevel >= 20) return 'D';
     return 'E';
   };
 
