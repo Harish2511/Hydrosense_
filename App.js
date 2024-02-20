@@ -14,9 +14,10 @@ import Forecasting from './modules/forecasting';
 import Alert from './modules/Alert'
 import Grafana from './modules/Grafana';
 import Report from './modules/Report';
-import Combined from './modules/Combined'
+import Combined from './modules/WaterlevelMonitor'
 import { Image } from 'react-native'; // Import Image from react-native
 import * as Font from 'expo-font';
+import WaterLevelMonitor from './modules/WaterlevelMonitor';
 
 const Drawer = createDrawerNavigator();
 const Stack = createStackNavigator();
@@ -49,7 +50,7 @@ const App = () => {
   }, []); // Empty dependency array means this effect runs once after the initial render
 
   const CustomDrawerContent = (props) => {
-    const [selectedRoute, setSelectedRoute] = useState('TankScreen');
+    const [selectedRoute, setSelectedRoute] = useState('Tank Screen');
   
     const handleRoutePress = (routeName) => {
       setSelectedRoute(routeName);
@@ -68,8 +69,8 @@ const App = () => {
 
         <DrawerItem
           label="Water Level Monitor"
-          onPress={() => handleRoutePress('Combined')}
-          labelStyle={getLabelStyle('Combined')}
+          onPress={() => handleRoutePress('WaterlevelMonitor')}
+          labelStyle={getLabelStyle('WaterlevelMonitor')}
         />
 
         <DrawerItem
@@ -149,8 +150,8 @@ const App = () => {
     else if (route.name === 'Alert') {
       title = 'Alert';
     }
-    else if (route.name === 'Combined') {
-      title = 'Combined';
+    else if (route.name === 'WaterlevelMonitor') {
+      title = 'WaterlevelMonitor';
     }
 
 
@@ -169,7 +170,7 @@ const App = () => {
       {fontLoaded && ( // Wait for the font to be loaded
         loggedIn ? (
           <Drawer.Navigator
-            initialRouteName="TankScreen"
+            initialRouteName="WaterlevelMonitor"
             drawerContent={(props) => <CustomDrawerContent {...props} />}
           >
             <Drawer.Screen
@@ -182,8 +183,8 @@ const App = () => {
               })}
             />
             <Drawer.Screen
-              name="Combined"
-              component={Combined}
+              name="WaterlevelMonitor"
+              component={WaterLevelMonitor}
               options={({ route }) => ({
                 headerTitle: () => <CustomAppBar route={route} />,
                 headerStyle: { backgroundColor: 'brown' },
@@ -193,24 +194,6 @@ const App = () => {
             <Drawer.Screen
               name="Analytics"
               component={Analytics}
-              options={({ route }) => ({
-                headerTitle: () => <CustomAppBar route={route} />,
-                headerStyle: { backgroundColor: 'brown' },
-                headerTintColor: 'white',
-              })}
-            />
-            <Drawer.Screen
-              name="Waterlevel"
-              component={Waterlevel}
-              options={({ route }) => ({
-                headerTitle: () => <CustomAppBar route={route} />,
-                headerStyle: { backgroundColor: 'brown' },
-                headerTintColor: 'white',
-              })}
-            />
-            <Drawer.Screen
-              name="TankScreen"
-              component={TankScreen}
               options={({ route }) => ({
                 headerTitle: () => <CustomAppBar route={route} />,
                 headerStyle: { backgroundColor: 'brown' },

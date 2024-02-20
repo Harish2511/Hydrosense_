@@ -32,6 +32,7 @@ const AlertPage = () => {
         |> filter(fn: (r) => r["_measurement"] == "WaterLevel")
         |> keep(columns: ["_time", "_value"])
         |> sort(columns:["_time"])
+        |> filter(fn: (r) => r["_value"] > 0)
       `;
 
       const result = await queryApi.collectRows(query);

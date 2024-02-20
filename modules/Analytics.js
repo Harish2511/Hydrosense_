@@ -24,26 +24,34 @@ const AnalyticsPage = () => {
     try {
       const client = new InfluxDB({ url, token });
       const queryApi = client.getQueryApi(org);
-
+  
       const waterLevelQuery = `
         from(bucket: "${bucket}")
         |> range(start: -3d)
         |> filter(fn: (r) => r["_measurement"] == "WaterLevel")
         |> keep(columns: ["_time", "_value"])
         |> sort(columns:["_time"])
+        |> filter(fn: (r) => r["_value"] > 0)
       `;
-
+  
       const waterLevelResult = await queryApi.collectRows(waterLevelQuery);
-
+  
       if (waterLevelResult.length > 0) {
-        const waterLevelDataPoints = waterLevelResult.map(row => ({
-          x: new Date(row["_time"]),
-          y: row["_value"]
-        }));
-
+        const waterLevelDataPoints = waterLevelResult.map(row => {
+          // Format time with AM/PM
+          const date = new Date(row["_time"]);
+          const time = date.toLocaleTimeString('en-US', { hour: 'numeric', minute: 'numeric', hour12: true });
+          
+          return {
+            x: date, // Use Date object for x-value
+            xFormatted: time, // Store formatted time separately
+            y: row["_value"]
+          };
+        });
+  
         const latestWaterLevel = waterLevelDataPoints[waterLevelDataPoints.length - 1].y;
         let motorState, category;
-
+  
         if (latestWaterLevel < 50) {
           motorState = 'ON';
           category = 'D';
@@ -57,19 +65,19 @@ const AnalyticsPage = () => {
           motorState = 'OFF';
           category = 'A';
         }
-
+  
         setMotorStateData([{ x: new Date(), y: motorState }]);
         setCategoryData([{ x: new Date(), y: category }]);
         setLastRecordTime(new Date());
         
-        // Take only the last 10 records for water level data
+        // Take only the last 20 records for water level data
         setWaterLevelData(waterLevelDataPoints.slice(-20));
       }
     } catch (error) {
       console.error('Error fetching data:', error);
     }
   };
-
+  
   return (
     <ScrollView>
       <View style={styles.container}>
@@ -85,7 +93,14 @@ const AnalyticsPage = () => {
               parent: { border: "1px solid #ccc" }
             }}
           />
-          <VictoryAxis label="Time" style={{ tickLabels: { angle: -45 } }} />
+          <VictoryAxis
+            label="Time"
+            style={{ tickLabels: { angle: -45 } }}
+            tickFormat={(t) => {
+              const date = new Date(t);
+              return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: 'numeric', hour12: true });
+            }}
+          />
           <VictoryAxis dependentAxis label="Water Level (cm)" />
         </VictoryChart>
 
@@ -99,7 +114,14 @@ const AnalyticsPage = () => {
               parent: { border: "1px solid #ccc" }
             }}
           />
-          <VictoryAxis label="Time" style={{ tickLabels: { angle: -45 } }} />
+          <VictoryAxis
+            label="Time"
+            style={{ tickLabels: { angle: -45 } }}
+            tickFormat={(t) => {
+              const date = new Date(t);
+              return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: 'numeric', hour12: true });
+            }}
+          />
           <VictoryAxis dependentAxis label="Motor State" tickValues={['ON', 'OFF']} />
         </VictoryChart>
 
@@ -113,7 +135,14 @@ const AnalyticsPage = () => {
               parent: { border: "1px solid #ccc" }
             }}
           />
-          <VictoryAxis label="Time" style={{ tickLabels: { angle: -45 } }} />
+          <VictoryAxis
+            label="Time"
+            style={{ tickLabels: { angle: -45 } }}
+            tickFormat={(t) => {
+              const date = new Date(t);
+              return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: 'numeric', hour12: true });
+            }}
+          />
           <VictoryAxis dependentAxis label="Category" tickValues={['D', 'C', 'B', 'A']} />
         </VictoryChart>
 
@@ -129,6 +158,15 @@ const AnalyticsPage = () => {
               parent: { border: "1px solid #ccc" }
             }}
           />
+          <VictoryAxis
+            label="Time"
+            style={{ tickLabels: { angle: -45 } }}
+            tickFormat={(t) => {
+              const date = new Date(t);
+              return date.toLocaleString('en-US', { hour: 'numeric', minute: 'numeric', hour12: true });
+            }}
+          />
+          <VictoryAxis dependentAxis label="Water Level (cm)" />
         </VictoryChart>
 
         <Text style={styles.headerText}>Motor State Summary</Text>

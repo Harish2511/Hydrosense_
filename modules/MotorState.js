@@ -53,7 +53,9 @@ const MotorState = () => {
     |> range(start: -2d)
     |> filter(fn: (r) => r["_measurement"] == "WaterLevel")
     |> keep(columns: ["_time", "_value"])
-    |> sort(columns:["_time"])`;
+    |> sort(columns:["_time"])
+    |> filter(fn: (r) => r["_value"] > 0)
+    `;
     ;
 
     const res = await queryApi.collectRows(query);
