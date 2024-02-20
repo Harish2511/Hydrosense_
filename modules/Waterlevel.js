@@ -37,6 +37,7 @@ const Waterlevel = () => {
     const client = new InfluxDB({ url, token });
     const queryApi = client.getQueryApi(org);
 
+    
     const query = `from(bucket: "${bucket}")
     |> range(start: -2d)
     |> filter(fn: (r) => r["_measurement"] == "WaterLevel")

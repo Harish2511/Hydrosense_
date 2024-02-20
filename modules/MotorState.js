@@ -48,16 +48,17 @@ const MotorState = () => {
     const client = new InfluxDB({ url, token });
     const queryApi = client.getQueryApi(org);
 
-    const query = `
-      from(bucket: "${bucket}")
-      |> range(start: -2d)
-      |> filter(fn: (r) => r["_measurement"] == "WaterLevel" and r["_field"] == "distance")
-      |> last()
-    `;
+    
+    const query = `from(bucket: "${bucket}")
+    |> range(start: -2d)
+    |> filter(fn: (r) => r["_measurement"] == "WaterLevel")
+    |> keep(columns: ["_time", "_value"])
+    |> sort(columns:["_time"])`;
+    ;
 
     const res = await queryApi.collectRows(query);
     if (res.length > 0) {
-      const latestWaterLevel = res[0]["_value"];
+      const latestWaterLevel = res[res.length - 1]["_value"];
       const percentage = (latestWaterLevel / 300) * 100; // Assuming the max capacity is 300cm
       setTableData(prevData => {
         return prevData.map(item => {

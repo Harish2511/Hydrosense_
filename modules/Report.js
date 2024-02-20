@@ -15,12 +15,35 @@ const Report = () => {
   const [selectedDate, setSelectedDate] = useState(null);
 
   const handleDownloadCurrentData = async () => {
-    // Handle "Download Current Data" button press
-    const currentDate = new Date();
-    const formattedDate = `${currentDate.toLocaleDateString()} ${currentDate.toLocaleTimeString()}`;
-    const waterLevel = await fetchWaterLevelForDate(currentDate);
-    downloadReport(formattedDate, waterLevel);
+    try {
+      // Get the current date and time
+      const currentDate = new Date();
+      
+      // Fetch water level data for the present day up to the current time
+      const waterLevel = await fetchWaterLevelForDateRange(currentDate, new Date());
+      
+      // Create the report data in CSV format
+      let reportData = 'ID,Date,Time,Water Level\n';
+      waterLevel.forEach((record, index) => {
+        reportData += `${index + 1},${record.date},${record.time},${record.waterLevel}\n`;
+      });
+  
+      // Create the filename with the current date
+      const filename = `Report_${currentDate.toLocaleDateString().replace(/\//g, '-')}.csv`;
+      
+      // Construct the file URI
+      const fileUri = FileSystem.documentDirectory + filename;
+      
+      // Write report data to the CSV file
+      await FileSystem.writeAsStringAsync(fileUri, reportData, { encoding: FileSystem.EncodingType.UTF8 });
+      
+      // Share and download the CSV file
+      await Sharing.shareAsync(fileUri, { mimeType: 'text/csv', dialogTitle: 'Download Report' });
+    } catch (error) {
+      console.error('Error downloading current data:', error);
+    }
   };
+  
 
   const handleDownloadPreviousData = () => {
     setShowCalendar(true);

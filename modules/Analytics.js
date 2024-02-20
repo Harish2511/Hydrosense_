@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { InfluxDB } from "@influxdata/influxdb-client";
 import { StyleSheet, View, Text, ScrollView } from "react-native";
-import { VictoryBar, VictoryChart, VictoryLine, VictoryTheme,VictoryAxis } from "victory-native";
+import { VictoryBar, VictoryChart, VictoryLine, VictoryTheme, VictoryAxis } from "victory-native";
 
 const token = '1f-jAzMp7AsoDQz-SLTYRLv43JRCNuMW_T8qq3AIuuz5aWJH-ktSHlV7zJCKmfyIGcOjrSIJ07cL7kYUmmzhPQ==';
 const org = 'abb6618f3fac8447';
@@ -41,7 +41,6 @@ const AnalyticsPage = () => {
           y: row["_value"]
         }));
 
-        // Derive motor state and category
         const latestWaterLevel = waterLevelDataPoints[waterLevelDataPoints.length - 1].y;
         let motorState, category;
 
@@ -62,7 +61,9 @@ const AnalyticsPage = () => {
         setMotorStateData([{ x: new Date(), y: motorState }]);
         setCategoryData([{ x: new Date(), y: category }]);
         setLastRecordTime(new Date());
-        setWaterLevelData(waterLevelDataPoints);
+        
+        // Take only the last 10 records for water level data
+        setWaterLevelData(waterLevelDataPoints.slice(-20));
       }
     } catch (error) {
       console.error('Error fetching data:', error);
@@ -75,47 +76,46 @@ const AnalyticsPage = () => {
         <Text style={styles.headerText}>Water Level Analytics</Text>
         <Text>Last Record Time: {lastRecordTime ? lastRecordTime.toLocaleString() : 'N/A'}</Text>
         <VictoryChart theme={VictoryTheme.material} width={350} height={200}>
-  <VictoryLine
-    data={waterLevelData}
-    x="x"
-    y="y"
-    style={{
-      data: { stroke: "#c43a31" },
-      parent: { border: "1px solid #ccc" }
-    }}
-  />
-  <VictoryAxis label="Time" />
-  <VictoryAxis dependentAxis label="Water Level (cm)" />
-</VictoryChart>
+          <VictoryLine
+            data={waterLevelData}
+            x="x"
+            y="y"
+            style={{
+              data: { stroke: "#c43a31" },
+              parent: { border: "1px solid #ccc" }
+            }}
+          />
+          <VictoryAxis label="Time" style={{ tickLabels: { angle: -45 } }} />
+          <VictoryAxis dependentAxis label="Water Level (cm)" />
+        </VictoryChart>
 
-<VictoryChart theme={VictoryTheme.material} width={350} height={200}>
-  <VictoryBar
-    data={motorStateData}
-    x="x"
-    y="y"
-    style={{
-      data: { fill: "#007ACC" },
-      parent: { border: "1px solid #ccc" }
-    }}
-  />
-  <VictoryAxis label="Time" />
-  <VictoryAxis dependentAxis label="Motor State" tickValues={['ON', 'OFF']} />
-</VictoryChart>
+        <VictoryChart theme={VictoryTheme.material} width={350} height={200}>
+          <VictoryBar
+            data={motorStateData}
+            x="x"
+            y="y"
+            style={{
+              data: { fill: "#007ACC" },
+              parent: { border: "1px solid #ccc" }
+            }}
+          />
+          <VictoryAxis label="Time" style={{ tickLabels: { angle: -45 } }} />
+          <VictoryAxis dependentAxis label="Motor State" tickValues={['ON', 'OFF']} />
+        </VictoryChart>
 
-<VictoryChart theme={VictoryTheme.material} width={350} height={200}>
-  <VictoryBar
-    data={categoryData}
-    x="x"
-    y="y"
-    style={{
-      data: { fill: "#3F7CAC" },
-      parent: { border: "1px solid #ccc" }
-    }}
-  />
-  <VictoryAxis label="Time" />
-  <VictoryAxis dependentAxis label="Category" tickValues={['D', 'C', 'B', 'A']} />
-</VictoryChart>
-
+        <VictoryChart theme={VictoryTheme.material} width={350} height={200}>
+          <VictoryBar
+            data={categoryData}
+            x="x"
+            y="y"
+            style={{
+              data: { fill: "#3F7CAC" },
+              parent: { border: "1px solid #ccc" }
+            }}
+          />
+          <VictoryAxis label="Time" style={{ tickLabels: { angle: -45 } }} />
+          <VictoryAxis dependentAxis label="Category" tickValues={['D', 'C', 'B', 'A']} />
+        </VictoryChart>
 
         {/* Additional Insights */}
         <Text style={styles.headerText}>Water Level Distribution</Text>

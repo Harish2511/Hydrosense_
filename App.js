@@ -73,22 +73,11 @@ const App = () => {
         />
 
         <DrawerItem
-          label="Tank Screen"
-          onPress={() => handleRoutePress('TankScreen')}
-          labelStyle={getLabelStyle('TankScreen')}
-        />
-
-        <DrawerItem
           label="Motor State"
           onPress={() => handleRoutePress('MotorState')}
           labelStyle={getLabelStyle('MotorState')}
         />
-
-        <DrawerItem
-          label="Water Level"
-          onPress={() => handleRoutePress('Waterlevel')}
-          labelStyle={getLabelStyle('Waterlevel')}
-        />
+  
 
         <DrawerItem
           label="Analytics"

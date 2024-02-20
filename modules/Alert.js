@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { InfluxDB } from "@influxdata/influxdb-client";
 import { StyleSheet, View, Text, ScrollView } from "react-native";
 import * as Notifications from 'expo-notifications';
+import 'text-encoding';
 
 const token = '1f-jAzMp7AsoDQz-SLTYRLv43JRCNuMW_T8qq3AIuuz5aWJH-ktSHlV7zJCKmfyIGcOjrSIJ07cL7kYUmmzhPQ==';
 const org = 'abb6618f3fac8447';
@@ -27,7 +28,7 @@ const AlertPage = () => {
 
       const query = `
         from(bucket: "${bucket}")
-        |> range(start: -3d)
+        |> range(start: -2d)
         |> filter(fn: (r) => r["_measurement"] == "WaterLevel")
         |> keep(columns: ["_time", "_value"])
         |> sort(columns:["_time"])
