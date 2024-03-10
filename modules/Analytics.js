@@ -34,6 +34,7 @@ const AnalyticsPage = () => {
         |> filter(fn: (r) => r["_value"] > 0)
       `;
   
+      
       const waterLevelResult = await queryApi.collectRows(waterLevelQuery);
   
       if (waterLevelResult.length > 0) {
